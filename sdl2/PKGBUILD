@@ -1,0 +1,49 @@
+pkgname=sdl2
+pkgver=2.30.8
+pkgrel=1
+pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 2)"
+arch=('i686' 'x86_64')
+url="https://www.libsdl.org"
+license=('Zlib')
+depends=()
+makedepends=('cmake' 'ninja' 'autotools' 'gcc')
+source=("https://github.com/libsdl-org/SDL/releases/download/release-${pkgver}/SDL2-${pkgver}.tar.gz"{,.sig})
+sha512sums=('72e49d8a67f5ca1241a262e7e7ae7f6ff148e8774343110db652589ab2e72d3425534ca7f8c7825b2ae1afc779c09228da33a9586219ac4e53546a4930380b64'
+            'SKIP')
+validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
+
+prepare() {
+  cd SDL2-${pkgver}
+
+  sed -i 's/lcygwin/lmsys-2.0/' configure.ac
+  sed -i 's/lcygwin/lmsys-2.0/' configure
+}
+
+build() {
+  [[ -d "build-${MSYSTEM}" ]] && rm -rf "build-${MSYSTEM}"
+  mkdir -p "${srcdir}/build-${MSYSTEM}"
+  cd "${srcdir}/build-${MSYSTEM}"
+
+  local CYGWIN_CHOST="${CHOST/-msys/-cygwin}"
+
+  ../SDL2-${pkgver}/configure \
+    --prefix=${MSYSTEM_PREFIX} \
+    --build=${CYGWIN_CHOST} \
+    --disable-assembly \
+    --enable-shared \
+    --enable-static
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM}"
+  DESTDIR="${pkgdir}" make install
+
+  # For some reason, this isn't named correctly and we have to fix it to reflect the actual staticlib name.
+  #sed -i "s/libSDL2\.a/libSDL2main.a/g" "$pkgdir"/usr/lib/cmake/SDL2/SDL2Targets-noconfig.cmake
+
+  install -Dm644 ../SDL2-${pkgver}/LICENSE.txt "$pkgdir${MSYSTEM_PREFIX}/share/licenses/$pkgname/LICENSE"
+}
+
+# vim:set ts=2 sw=2 et:
