@@ -1,0 +1,56 @@
+# ArchLinux Maintainer: Christian Hesse
+# ArchLinux Contributor: Jan de Groot
+# ArchLinux Contributor: dorphell
+# ArchLinux Contributor: Travis Willard
+# ArchLinux Contributor: Douglas Soares de Andrade
+
+pkgname=libpng
+pkgver=1.6.44
+pkgrel=1
+pkgdesc='A collection of routines used to create PNG format graphics files'
+arch=('i686' 'x86_64')
+url='http://www.libpng.org/pub/png/libpng.html'
+license=('custom')
+depends=('zlib' 'sh')
+makedepends=('git' 'zlib-devel' 'patch' 'autotools' 'gcc')
+#provides=('libpng16.so')
+source=("git+https://github.com/pnggroup/libpng.git?signed#tag=v${pkgver}"
+        '001-Add-include-of-io.h.patch')
+sha256sums=('SKIP'
+            '8fbb5907f75ab3f8f3d94f52299a40595bdc278a7c33916106f8c179854f510b')
+validpgpkeys=('F57A55036A4D45837074FD92C9E384533403C2F8') # Cosmin Truta
+
+prepare() {
+  cd $pkgname
+
+  patch -Nbp1 -i "${srcdir}/001-Add-include-of-io.h.patch"
+
+  autoreconf -fiv
+}
+
+build() {
+  cd $pkgname
+
+  ./configure \
+    --prefix=/usr \
+    --disable-static
+  make
+}
+
+check() {
+  cd $pkgname
+
+  make check
+}
+
+package() {
+  cd $pkgname
+
+  make DESTDIR="$pkgdir" install
+
+  install -D -m0644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
+  cd contrib/pngminus
+  make PNGLIB_SHARED="-L$pkgdir/usr/lib -lpng" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" png2pnm pnm2png
+  install -m0755 png2pnm pnm2png "$pkgdir/usr/bin/"
+}

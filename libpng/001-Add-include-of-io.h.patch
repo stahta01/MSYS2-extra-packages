@@ -1,0 +1,35 @@
+From 2d96f5a606b80a9709fb561efe2b9dc971ec65b5 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Tue, 22 Oct 2024 17:44:38 -0400
+Subject: Add include of "io.h"
+
+---
+ contrib/pngminus/png2pnm.c | 1 +
+ contrib/pngminus/pnm2png.c | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/contrib/pngminus/png2pnm.c b/contrib/pngminus/png2pnm.c
+index f9d5138b7..146a02ecb 100644
+--- a/contrib/pngminus/png2pnm.c
++++ b/contrib/pngminus/png2pnm.c
+@@ -9,6 +9,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <fcntl.h>
++#include <io.h>
+
+ #ifndef BOOL
+ #define BOOL unsigned char
+diff --git a/contrib/pngminus/pnm2png.c b/contrib/pngminus/pnm2png.c
+index 052fd3272..5a681e0e1 100644
+--- a/contrib/pngminus/pnm2png.c
++++ b/contrib/pngminus/pnm2png.c
+@@ -10,6 +10,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <fcntl.h>
++#include <io.h>
+
+ #ifndef BOOL
+ #define BOOL unsigned char
+--
