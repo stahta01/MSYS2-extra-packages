@@ -1,0 +1,94 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+#_with_harfbuzz="yes"
+_with_harfbuzz="no"
+
+_realname=freetype
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=2.13.3
+pkgrel=1
+pkgdesc="TrueType font rendering library"
+msys2_references=(
+  'archlinux: freetype2'
+  "cpe: cpe:/a:freetype:freetype"
+)
+arch=('i686' 'x86_64')
+url="https://www.freetype.org/"
+license=('spdx:GPL-2.0-or-later OR FTL')
+depends=(gcc-libs
+         brotli
+         bzip2
+         libpng
+         zlib)
+if [ "${_with_harfbuzz}" == "yes" ]; then
+  depends+=(harfbuzz)
+fi
+makedepends=(meson
+             ninja
+             pkgconf
+             gcc
+             brotli-devel
+             libbz2-devel
+             zlib-devel)
+source=(https://download-mirror.savannah.gnu.org/releases/freetype//freetype-${pkgver}.tar.xz{,.sig}
+        freetype-2.10.0-enable-valid.patch
+        freetype-2.10.0-enable-spr.patch)
+sha256sums=('0550350666d427c74daeb85d5ac7bb353acba5f76956395995311a9c6f063289'
+            'SKIP'
+            'a228959112e2288e4f2eb46370accff8ff1c6af9003d7242edeaaf48743911e3'
+            '47d675c4568bf7ebe29ac6af3098901bfa02110ec39108da54badb5a1cfb3be0')
+validpgpkeys=('E30674707856409FF1948010BE6C3AAC63AD8E3F') # Werner Lemberg <wl@gnu.org>
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -Nbp1 -i "${srcdir}/${_patch}"
+  done
+}
+
+prepare() {
+  cd "${srcdir}/freetype-${pkgver}"
+
+  apply_patch_with_msg \
+    freetype-2.10.0-enable-valid.patch \
+    freetype-2.10.0-enable-spr.patch
+}
+
+build() {
+  mkdir -p "${srcdir}/build-${MSYSTEM}" && cd "${srcdir}/build-${MSYSTEM}"
+
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("--buildtype=release")
+  else
+    extra_config+=("--buildtype=debug")
+  fi
+
+  if [ "${_with_harfbuzz}" != "yes" ]; then
+    extra_config+=("-Dharfbuzz=disabled")
+  fi
+
+    meson setup \
+      --prefix="${MSYSTEM_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --default-library=both \
+      "${extra_config[@]}" \
+      ../${_realname}-${pkgver}
+
+  meson compile
+}
+
+package () {
+  cd "${srcdir}/build-${MSYSTEM}"
+
+  DESTDIR="${pkgdir}" meson install
+
+  # Licenses
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/GPLv2.TXT"   "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/GPLv2.TXT"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/docs/FTL.TXT"     "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/FTL.TXT"
+}
