@@ -1,0 +1,57 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=pixman
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=0.43.4
+pkgrel=1
+pkgdesc="The pixel-manipulation library for X and cairo"
+url="https://gitlab.freedesktop.org/pixman/pixman"
+msys2_references=(
+  'cpe: cpe:/a:pixman:pixman'
+)
+arch=('i686' 'x86_64')
+license=('spdx:MIT')
+makedepends=(gcc
+             pkgconf
+             libpng
+             meson
+             ninja)
+depends=(gcc-libs)
+source=("https://xorg.freedesktop.org/releases/individual/lib/pixman-${pkgver}.tar.xz")
+sha256sums=('48d8539f35488d694a2fef3ce17394d1153ed4e71c05d1e621904d574be5df19')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  echo "finished"
+}
+
+build() {
+  mkdir -p build-${MSYSTEM_CARCH} && cd build-${MSYSTEM_CARCH}
+
+  meson setup \
+    --prefix=${MSYSTEM_PREFIX} \
+    --buildtype plain \
+    -Ddefault_library=both \
+    -Dgtk=disabled \
+    -Dtests=disabled \
+    -Da64-neon=disabled \
+    ../${_realname}-${pkgver}
+
+  meson compile
+}
+
+check() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  #meson test
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  DESTDIR="${pkgdir}" meson install
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+}
