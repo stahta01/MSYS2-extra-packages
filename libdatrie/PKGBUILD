@@ -1,0 +1,65 @@
+# Contributor: Andrew Sun
+
+_realname=libdatrie
+pkgbase=${_realname}
+pkgname=("${_realname}"
+         "${_realname}-docs")
+pkgver=0.2.13
+pkgrel=3
+pkgdesc="Implementation of double-array structure for representing trie, as proposed by Junichi Aoe."
+arch=('i686' 'x86_64')
+url='https://linux.thai.net/projects/datrie'
+license=('LGPL')
+depends=("libiconv")
+makedepends=("autotools"
+             "gcc"
+             "doxygen"
+             "libiconv-devel")
+source=("https://linux.thai.net/pub/thailinux/software/libthai/${_realname}-${pkgver}.tar.xz")
+sha256sums=('12231bb2be2581a7f0fb9904092d24b0ed2a271a16835071ed97bed65267f4be')
+
+build() {
+  [[ -d "${srcdir}"/build-${MSYSTEM_CARCH} ]] && rm -rf "${srcdir}"/build-${MSYSTEM_CARCH}
+  cp -rf "${srcdir}"/${_realname}-${pkgver}/. "${srcdir}"/build-${MSYSTEM_CARCH} && cd "${srcdir}"/build-${MSYSTEM_CARCH}
+  export ac_cv_func_malloc_0_nonnull=yes
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MSYSTEM_PREFIX} \
+    --build=${MSYSTEM_CHOST} \
+    --host=${MSYSTEM_CHOST} \
+    --target=${MSYSTEM_CHOST} \
+    --enable-static \
+    --enable-shared
+
+  make
+}
+
+package_libdatrie() {
+  optdepends=("libdatrie-docs: Documentation")
+
+  make -C "${srcdir}"/build-${MSYSTEM_CARCH} install DESTDIR="${pkgdir}"
+
+  # copy trietool executable correctly
+  rm -rf "${pkgdir}${MSYSTEM_PREFIX}"/bin/trietool-0.2.exe
+  cp -rf "${pkgdir}${MSYSTEM_PREFIX}"/bin/trietool.exe "${pkgdir}${MSYSTEM_PREFIX}"/bin/trietool-0.2.exe
+
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING
+
+  # split docs
+  mkdir -p dest${MSYSTEM_PREFIX}/share
+  mv "${pkgdir}${MSYSTEM_PREFIX}"/share/doc dest${MSYSTEM_PREFIX}/share/doc
+}
+
+package_libdatrie-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv dest/* "${pkgdir}"
+}
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done
+# template end;
