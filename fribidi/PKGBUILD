@@ -1,0 +1,57 @@
+# Contributor: Alexey Pavlov
+
+_realname=fribidi
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=1.0.16
+pkgrel=1
+pkgdesc="A Free Implementation of the Unicode Bidirectional Algorithm"
+arch=('i686' 'x86_64')
+license=('spdx:LGPL-2.1-or-later')
+url="https://github.com/fribidi/fribidi/"
+msys2_references=(
+  "cpe: cpe:/a:gnu:fribidi"
+)
+depends=()
+makedepends=(meson
+             ninja
+             pkgconf
+             'gcc')
+source=("https://github.com/fribidi/fribidi/releases/download/v${pkgver}/fribidi-${pkgver}.tar.xz")
+sha256sums=('1b1cde5b235d40479e91be2f0e88a309e3214c8ab470ec8a2744d82a5a9ea05c')
+
+build() {
+  meson setup \
+      --prefix=${MSYSTEM_PREFIX} \
+      --buildtype plain \
+      --prefix=${MSYSTEM_PREFIX} \
+       -Ddocs=false \
+       --default-library static \
+       build-${MSYSTEM_CARCH}-static \
+      ${_realname}-${pkgver}
+
+  meson compile -C build-${MSYSTEM_CARCH}-static
+
+  meson setup \
+      --prefix=${MSYSTEM_PREFIX} \
+      --buildtype plain \
+      --prefix=${MSYSTEM_PREFIX} \
+       -Ddocs=false \
+       --default-library shared \
+       build-${MSYSTEM_CARCH}-shared \
+      ${_realname}-${pkgver}
+
+  meson compile -C build-${MSYSTEM_CARCH}-shared
+}
+
+check() {
+  meson test -C build-${MSYSTEM_CARCH}-static
+  meson test -C build-${MSYSTEM_CARCH}-shared
+}
+
+package() {
+  meson install -C build-${MSYSTEM_CARCH}-static --destdir="${pkgdir}"
+  meson install -C build-${MSYSTEM_CARCH}-shared --destdir="${pkgdir}"
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+}
