@@ -1,0 +1,35 @@
+
+
+_realname=OpenGL-Registry
+_name=gles-headers
+_specver=3.2
+pkgbase=${_name}
+pkgname="${_name}"
+pkgver=3.2.r1005.d127c30
+pkgrel=1
+_commit=d127c3015a5429a5261b3bf464c9a07c00576048
+pkgdesc="OpenGL|ES header files"
+arch=('i686' 'x86_64')
+url="https://www.khronos.org/opengles"
+license=('spdx:MIT')
+depends=()
+makedepends=("git")
+source=("git+https://github.com/KhronosGroup/OpenGL-Registry.git#commit=$_commit")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd ${_realname}
+  printf "${_specver}.r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+package() {
+  targetdir=${pkgdir}${MSYSTEM_PREFIX}/include
+
+  rm -rf "${targetdir}"
+  mkdir -p "${targetdir}"
+
+  for api in 'GLES' 'GLES2' 'GLES3'
+  do
+    cp -R "${srcdir}/${_realname}/api/${api}" "${targetdir}"
+  done
+}
