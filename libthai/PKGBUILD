@@ -1,0 +1,73 @@
+# Contributor: Andrew Sun <adsun701@gmail.com>
+
+_realname=libthai
+pkgbase=${_realname}
+pkgname=("${_realname}"
+         "${_realname}-docs")
+pkgver=0.1.29
+pkgrel=3
+pkgdesc="Thai language support routines"
+arch=('i686' 'x86_64')
+url="https://linux.thai.net/projects/libthai"
+msys2_references=(
+  "cpe: cpe:/a:linux.thai:libthai"
+)
+license=('LGPL')
+depends=('libdatrie')
+makedepends=('autoconf-archive'
+             'autotools'
+             'gcc'
+             "doxygen")
+source=("https://linux.thai.net/pub/thailinux/software/libthai/${_realname}-${pkgver}.tar.xz"
+        'relocatable.patch')
+sha256sums=('fc80cc7dcb50e11302b417cebd24f2d30a8b987292e77e003267b9100d0f4bcd'
+            'a891b18ebfe8f7bbee749567d9f9078b0c83ff8264c45f0fe739b8ff2ea45c55')
+
+prepare() {
+  cd "${srcdir}/libthai-${pkgver}"
+  patch -Np1 -i "${srcdir}"/relocatable.patch
+  autoreconf -fiv
+}
+
+build() {
+  [[ -d "${srcdir}"/build-${MSYSTEM} ]] && rm -rf "${srcdir}"/build-${MSYSTEM}
+  mkdir -p "${srcdir}"/build-${MSYSTEM} && cd "${srcdir}"/build-${MSYSTEM}
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MSYSTEM_PREFIX} \
+    --build=${MSYSTEM_CHOST} \
+    --host=${MSYSTEM_CHOST} \
+    --target=${MSYSTEM_CHOST} \
+    --enable-static \
+    --enable-shared
+
+  make
+}
+
+package_libthai() {
+  optdepends=("libthai-docs: Documentation")
+
+  make -C "${srcdir}"/build-${MSYSTEM} install DESTDIR="${pkgdir}"
+
+  install -Dm644 ${srcdir}/${_realname}-${pkgver}/COPYING ${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING
+
+  # split docs
+  mkdir -p dest${MSYSTEM_PREFIX}/share
+  mv "${pkgdir}${MSYSTEM_PREFIX}"/share/doc dest${MSYSTEM_PREFIX}/share/doc
+}
+
+package_libthai-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv dest/* "${pkgdir}"
+}
+
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done
+# template end;
