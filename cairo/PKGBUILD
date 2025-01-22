@@ -1,0 +1,111 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=cairo
+pkgbase=${_realname}
+pkgname="${_realname}"
+_commit='b43e7c6f3cf7855e16170a06d3a9c7234c60ca94'
+pkgver=1.18.2
+pkgrel=2
+pkgdesc="Cairo vector graphics library"
+arch=('i686' 'x86_64')
+url="https://cairographics.org/"
+msys2_references=(
+  "cpe: cpe:2.3:a:cairographics:cairo"
+)
+license=('spdx:LGPL-2.1-or-later' OR 'spdx:MPL-1.1')
+makedepends=('gcc'
+             "meson"
+             "ninja"
+             "pkgconf"
+             "glib2"
+             "python"
+             #"python-fonttools"
+             'libexpat-devel'
+             'gettext-devel'
+             'liblzo2-devel'
+             'glib2-devel'
+             'brotli-devel'
+            )
+depends=("gcc-libs"
+         'freetype'
+         "fontconfig"
+         "glib2"
+         'gettext'
+         'liblzo2'
+         "pixman"
+         "libpng"
+         "zlib"
+        )
+optdepends=("glib2: libcairo-gobject")
+source=("https://cairographics.org/releases/cairo-${pkgver}.tar.xz")
+sha256sums=('a62b9bb42425e844cc3d6ddde043ff39dbabedd1542eba57a2eb79f85889d45a')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  #patch -p1 -i ${srcdir}/0026-create-argb-fonts.all.patch
+  #patch -p1 -i ${srcdir}/0030-ucrt-clang-fixes.patch
+}
+
+build() {
+  local -a _static_flags=(
+    -DGIO_STATIC_COMPILATION
+    -DGLIB_STATIC_COMPILATION
+    -DGMODULE_STATIC_COMPILATION
+    -DGOBJECT_STATIC_COMPILATION
+  )
+
+  local -a _meson_options
+  _meson_options=(
+    --prefix=${MSYSTEM_PREFIX}
+    --buildtype=plain
+    --wrap-mode=nofallback
+    -Dauto_features=enabled
+    -Dtests=disabled
+    -Ddwrite=enabled
+    -Dfontconfig=enabled
+    -Dfreetype=enabled
+    -Dpng=enabled
+    -Dtee=enabled
+    -Dzlib=disabled
+    -Dxlib=disabled
+    -Dxcb=disabled
+    -Dspectre=disabled
+    -Dsymbol-lookup=disabled
+  )
+
+  # work around gcc errors
+  if [[ "${CC}" == "gcc" ]]; then
+    CFLAGS+=" -Wno-error=incompatible-pointer-types"
+    CXXFLAGS+=" -Wno-error=incompatible-pointer-types"
+  fi
+
+  # Enables CAIRO_WIN32_STATIC_BUILD, keeps DllMain far away (#17643)
+  CFLAGS+=" ${_static_flags[@]}" \
+  CXXFLAGS+=" ${_static_flags[@]}" \
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    "${_meson_options[@]}" \
+    --default-library=static \
+    "${_realname}-${pkgver}" \
+    "build-${CARCH}-static"
+
+  meson compile -C "build-${CARCH}-static"
+
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    "${_meson_options[@]}" \
+    --default-library=shared \
+    "${_realname}-${pkgver}" \
+    "build-${CARCH}-shared"
+
+  meson compile -C "build-${CARCH}-shared"
+}
+
+package() {
+  meson install -C "build-${CARCH}-static" --destdir "${pkgdir}"
+  meson install -C "build-${CARCH}-shared" --destdir "${pkgdir}"
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING"          "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING-LGPL-2.1" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING-LGPL-2.1"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING-MPL-1.1"  "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING-MPL-1.1"
+}
