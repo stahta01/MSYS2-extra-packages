@@ -1,0 +1,128 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=pango
+pkgbase=${_realname}
+pkgname=("${_realname}")
+         #"${_realname}-docs")
+pkgver=1.54.0 # needs fontconfig
+#pkgver=1.48.5
+pkgrel=1
+pkgdesc="A library for layout and rendering of text"
+arch=('i686' 'x86_64')
+url="https://www.pango.org/"
+msys2_repository_url="https://gitlab.gnome.org/GNOME/pango"
+msys2_references=(
+  "cpe: cpe:/a:gnome:pango"
+  "cpe: cpe:/a:pango:pango"
+)
+license=('spdx:LGPL-2.1')
+makedepends=("pkgconf"
+             #"gobject-introspection"
+             'glib2-devel'
+             'libexpat-devel'
+             'brotli-devel'
+             "meson"
+             #"gi-docgen"
+             'gcc'
+             "help2man")
+depends=("gcc-libs"
+         "cairo"
+         "freetype"
+         "fontconfig"
+         "glib2"
+         "harfbuzz"
+         "fribidi"
+         "libthai")
+options=('staticlibs' 'strip' 'emptydirs')
+source=("https://download.gnome.org/sources/pango/${pkgver:0:4}/${_realname}-${pkgver}.tar.xz"
+        '0001-disable-dwrite.patch')
+sha256sums=('8a9eed75021ee734d7fc0fdf3a65c3bba51dfefe4ae51a9b414a60c70b2d1ed8'
+            '18f14c39d441ec8d015209a6d1daf15fd17e7504b958f808b33477e1d54d5c97')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  # https://gitlab.gnome.org/GNOME/pango/-/issues/767
+  patch -Np1 -i "${srcdir}/0001-disable-dwrite.patch"
+}
+
+build() {
+  local -a _static_flags=(
+    -DGIO_STATIC_COMPILATION
+    -DGLIB_STATIC_COMPILATION
+    -DGMODULE_STATIC_COMPILATION
+    -DGOBJECT_STATIC_COMPILATION
+    -DCAIRO_WIN32_STATIC_BUILD
+  )
+
+  [[ -d build-${MSYSTEM_CARCH} ]] && rm -rf build-${MSYSTEM_CARCH}
+  mkdir -p build-${MSYSTEM_CARCH}
+  cd build-${MSYSTEM_CARCH}
+
+  LDFLAGS+=" -ldatrie" \
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    --prefix="${MSYSTEM_PREFIX}" \
+    --default-library shared \
+    --buildtype plain \
+    --auto-features=enabled \
+    -Dxft=disabled \
+    -Dintrospection=disabled \
+    --wrap-mode=nofallback \
+    ../${_realname}-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/meson compile
+
+  cd "${srcdir}"
+  [[ -d build-static-${MSYSTEM_CARCH} ]] && rm -rf build-static-${MSYSTEM_CARCH}
+  mkdir -p build-static-${MSYSTEM_CARCH}
+  cd build-static-${MSYSTEM_CARCH}
+
+  LDFLAGS+=" -ldatrie" \
+  CFLAGS+=" ${_static_flags[@]}" \
+  CXXFLAGS+=" ${_static_flags[@]}" \
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    --prefix="${MSYSTEM_PREFIX}" \
+    --default-library static \
+    --buildtype plain \
+    --auto-features=enabled \
+    -Dgtk_doc=false \
+    -Dintrospection=disabled \
+    -Dfontconfig=enabled \
+    --wrap-mode=nofallback \
+    -Dxft=disabled \
+    ../${_realname}-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/meson compile
+}
+
+check() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+  ${MSYSTEM_PREFIX}/bin/meson test || warning "Tests failed"
+
+  cd "${srcdir}/build-static-${MSYSTEM_CARCH}"
+  ${MSYSTEM_PREFIX}/bin/meson test || warning "Tests failed"
+}
+
+package() {
+  meson install -C "${srcdir}/build-static-${MSYSTEM_CARCH}" --destdir "${pkgdir}"
+  meson install -C "${srcdir}/build-${MSYSTEM_CARCH}" --destdir "${pkgdir}"
+
+  # remove installed tests, no need and they contain the build path which
+  # leads to pkgbuild warnings
+  rm -Rf "${pkgdir}${MSYSTEM_PREFIX}/share/installed-tests"
+  rm -Rf "${pkgdir}${MSYSTEM_PREFIX}/libexec"
+
+  mkdir -p dest/${MSYSTEM_PREFIX}/share
+  #mv "${pkgdir}${MSYSTEM_PREFIX}"/share/doc "dest${MSYSTEM_PREFIX}"/share/doc
+
+  # License
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+}
+
+#package_pango-docs() {
+  #pkgdesc+=" (documentation)"
+  #depends=()
+
+  #mv dest/* "${pkgdir}"
+#}
