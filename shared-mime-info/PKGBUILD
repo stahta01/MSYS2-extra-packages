@@ -1,0 +1,75 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=shared-mime-info
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=2.4
+pkgrel=1
+pkgdesc="Freedesktop.org Shared MIME Info"
+arch=('i686' 'x86_64')
+license=('spdx:GPL-2.0-or-later')
+depends=('libxml2'
+         'glib2')
+makedepends=('meson'
+             'pkgconf'
+             'itstool'
+             'gettext'
+             'gcc'
+             'glib2-devel'
+             'docbook-xsl'
+             'xmlto'
+             'libxml2-devel')
+install=${_realname}.install
+url="https://freedesktop.org/Software/shared-mime-info"
+msys2_repository_url="https://gitlab.freedesktop.org/xdg/shared-mime-info"
+source=(https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/${pkgver}/shared-mime-info-${pkgver}.tar.bz2
+        0001-shared-mime-meson-install-manpage.patch
+        program.manifest
+        update-mime-database.hook.in)
+sha256sums=('32dc32ae39ff1c1bf8434dd3b36770b48538a1772bc0298509d034f057005992'
+            '8582cc8bd411d10092fe977f25ea5c21654b8edbec60a03b470c384784ff69fe'
+            'f93191ad3e217ef9939cf16885ffe50ce920a0b639e183e46415f10df4b4db72'
+            'abd2493344263fe502c652379c6eae96c1f589dd50d73fca3191d083b17ade33')
+
+prepare() {
+  cd "${_realname}-${pkgver}"
+  patch -p1 -i "${srcdir}/0001-shared-mime-meson-install-manpage.patch"
+}
+
+build() {
+  export CPPFLAGS+=" -D_GNU_SOURCE"
+
+  meson setup \
+    --prefix="${MSYSTEM_PREFIX}" \
+    --buildtype=plain \
+    -Dupdate-mimedb=false \
+    "build-${MSYSTEM_CARCH}" \
+    "${_realname}-${pkgver}"
+
+  ${MSYSTEM_PREFIX}/bin/meson compile -C "build-${MSYSTEM_CARCH}"
+}
+
+package() {
+  ${MSYSTEM_PREFIX}/bin/meson install -C "build-${MSYSTEM_CARCH}" --destdir="${pkgdir}"
+
+  [[ ${CARCH} == i686 ]] && {
+    _arch=x86
+  } || {
+    _arch=amd64
+  }
+  install -Dm644 ${srcdir}/program.manifest ${pkgdir}${MSYSTEM_PREFIX}/bin/update-mime-database.exe.manifest
+  sed -e "s|%PROGNAME%|GNU.update-mime-database|g" \
+      -e "s|%ARCH%|${_arch}|g" \
+      -i ${pkgdir}${MSYSTEM_PREFIX}/bin/update-mime-database.exe.manifest
+
+  for hook in update-mime-database; do
+    local hook_path="${srcdir}/${hook}.hook";
+    cp "${srcdir}/${hook}.hook.in" "${hook_path}"
+    sed -s "s|@MINGW_HOOK_TARGET_PREFIX@|${MSYSTEM_PREFIX:1}|g" -i "${hook_path}"
+    sed -s "s|@_MINGW_PREFIX_@|${MSYSTEM_PREFIX}|g" -i "${hook_path}"
+    install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "${hook_path}"
+  done
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+}
