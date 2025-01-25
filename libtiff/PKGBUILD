@@ -1,0 +1,125 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=libtiff
+pkgbase=${_realname}
+pkgname=("${_realname}"
+         "${_realname}-docs")
+pkgver=4.7.0
+pkgrel=1
+pkgdesc="Library for manipulation of TIFF images"
+arch=('i686' 'x86_64')
+url="https://libtiff.gitlab.io/libtiff/"
+msys2_references=(
+  "cpe: cpe:/a:libtiff:libtiff"
+  "cpe: cpe:/a:remotesensing:libtiff"
+  "cpe: cpe:/a:simplesystems:libtiff"
+)
+license=('spdx:MIT')
+depends=('gcc-libs'
+         'libjpeg-turbo'
+         'xz'
+         'zlib'
+         'zstd')
+makedepends=('gcc'
+             'autotools')
+source=(https://download.osgeo.org/libtiff/tiff-${pkgver}.tar.gz
+        0001-Change-swap-logic.patch
+        0002-libtiff-install-headers.patch
+        0003-add-include.patch)
+sha256sums=('67160e3457365ab96c5b3286a0903aa6e78bdc44c4bc737d2e486bcecb6ba976'
+            'cf0b14956b865fa4a6af35554aba3cf2087ac155608773cc637173d026f96510'
+            '493742947c8667655b6b89f2d7d27e92e1438a490ed86f50811112394b432a12'
+            'e983ee210908f0ed9f64ce6ded5f76ee0d8591d6fdf108dbe8e68353230b5a2a')
+prepare() {
+  cd tiff-${pkgver}
+  patch -p1 -i "${srcdir}/0001-Change-swap-logic.patch"
+  patch -p1 -i "${srcdir}/0002-libtiff-install-headers.patch"
+  patch -p1 -i "${srcdir}/0003-add-include.patch"
+
+  sed -i 's/strnicmp/strncasecmp/'  contrib/iptcutil/iptcutil.c
+  sed -i 's/_fileno/fileno/'        contrib/iptcutil/iptcutil.c
+  sed -i 's/_O_BINARY/O_BINARY/'    contrib/iptcutil/iptcutil.c
+
+  # autoreconf to get updated libtool files for clang support
+  autoreconf -fiv
+}
+
+build() {
+  export CFLAGS+=" -fno-strict-aliasing"
+  export CXXFLAGS+=" -fno-strict-aliasing"
+  export CPPFLAGS+=" -D_WIN32"
+
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}-static" && cd "${srcdir}/build-${MSYSTEM_CARCH}-static"
+
+  ../tiff-${pkgver}/configure \
+    --prefix=${MSYSTEM_PREFIX} \
+    --build=${MSYSTEM_CHOST} \
+    --host=${MSYSTEM_CHOST} \
+    --target=${MSYSTEM_CHOST} \
+    --enable-static \
+    --disable-shared \
+    --enable-cxx \
+    --disable-jbig \
+    --disable-lerc \
+    --disable-libdeflate \
+    --disable-tools \
+    --disable-webp
+
+  make
+
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}-shared" && cd "${srcdir}/build-${MSYSTEM_CARCH}-shared"
+
+  ../tiff-${pkgver}/configure \
+    --prefix=${MSYSTEM_PREFIX} \
+    --build=${MSYSTEM_CHOST} \
+    --host=${MSYSTEM_CHOST} \
+    --target=${MSYSTEM_CHOST} \
+    --disable-static \
+    --enable-shared \
+    --enable-cxx \
+    --disable-jbig \
+    --disable-lerc \
+    --disable-libdeflate \
+    --disable-tools \
+    --disable-webp
+
+  make
+}
+
+check() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}-static"
+  make check || true
+
+  cd "${srcdir}/build-${MSYSTEM_CARCH}-shared"
+  make check || true
+}
+
+package_libtiff() {
+  make DESTDIR="${pkgdir}" -C "${srcdir}/build-${MSYSTEM_CARCH}-static" install
+  make DESTDIR="${pkgdir}" -C "${srcdir}/build-${MSYSTEM_CARCH}-shared" install
+
+  # License
+  # See https://fedoraproject.org/wiki/Licensing:MIT#Hylafax_Variant
+  install -Dm644 "${srcdir}/tiff-${pkgver}/LICENSE.md" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE.md"
+
+  # split docs
+  mkdir -p dest${MSYSTEM_PREFIX}/share
+  mv "${pkgdir}${MSYSTEM_PREFIX}"/share/doc dest${MSYSTEM_PREFIX}/share/doc
+}
+
+package_libtiff-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv dest/* "${pkgdir}"
+}
+
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done

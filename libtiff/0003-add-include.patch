@@ -1,0 +1,35 @@
+From 6c5d1f312c3b1651a07a7771e36ecc84645849de Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Fri, 24 Jan 2025 20:27:50 -0500
+Subject: Add include of "jconfig.h"
+
+---
+ libtiff/tif_jpeg.c  | 1 +
+ libtiff/tif_ojpeg.c | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/libtiff/tif_jpeg.c b/libtiff/tif_jpeg.c
+index aedd8c32..ed6d5cb5 100644
+--- a/libtiff/tif_jpeg.c
++++ b/libtiff/tif_jpeg.c
+@@ -74,6 +74,7 @@ int TIFFReInitJPEG_12(TIFF *tif, const JPEGOtherSettings *otherSettings,
+ int TIFFJPEGIsFullStripRequired_12(TIFF *tif);
+ 
+ #include "jerror.h"
++#include "jconfig.h"
+ #include "jpeglib.h"
+ 
+ /* Do optional compile-time version check */
+diff --git a/libtiff/tif_ojpeg.c b/libtiff/tif_ojpeg.c
+index 5ef7a6af..2f7be7a5 100644
+--- a/libtiff/tif_ojpeg.c
++++ b/libtiff/tif_ojpeg.c
+@@ -207,6 +207,7 @@ static const TIFFField ojpegFields[] = {
+ #endif
+ 
+ #include "jerror.h"
++#include "jconfig.h"
+ #include "jpeglib.h"
+ 
+ #ifndef TIFF_jpeg_source_mgr_defined
+-- 

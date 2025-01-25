@@ -1,0 +1,30 @@
+From 32d8930f12661fd7d52516b76e3fd667b7904af6 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Tue, 17 Jun 2025 23:01:51 -0400
+Subject: Change swap logic
+
+---
+ libtiff/tif_lzw.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/libtiff/tif_lzw.c b/libtiff/tif_lzw.c
+index 4bf845b3..c240b6b6 100644
+--- a/libtiff/tif_lzw.c
++++ b/libtiff/tif_lzw.c
+@@ -328,12 +328,12 @@ static int LZWPreDecode(TIFF *tif, uint16_t s)
+ #ifdef WORDS_BIGENDIAN
+ #define GetNextData(nextdata, bp) memcpy(&nextdata, bp, sizeof(nextdata))
+ #elif SIZEOF_WORDTYPE == 8
+-#if defined(_M_X64)
+-#define GetNextData(nextdata, bp) nextdata = _byteswap_uint64(*(uint64_t *)(bp))
+-#elif defined(__GNUC__)
++#if defined(__GNUC__)
+ #define GetNextData(nextdata, bp)                                              \
+     memcpy(&nextdata, bp, sizeof(nextdata));                                   \
+     nextdata = __builtin_bswap64(nextdata)
++#elif defined(_M_X64)
++#define GetNextData(nextdata, bp) nextdata = _byteswap_uint64(*(uint64_t *)(bp))
+ #else
+ #define GetNextData(nextdata, bp)                                              \
+     nextdata = (((uint64_t)bp[0]) << 56) | (((uint64_t)bp[1]) << 48) |         \
+-- 
