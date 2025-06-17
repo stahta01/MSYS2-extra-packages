@@ -1,0 +1,23 @@
+From 57b560ec170ada7c163987177aea6392b4154018 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Tue, 17 Jun 2025 21:32:15 -0400
+Subject: Skip building giscanner
+
+---
+ meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 654c1ab6..fa3d9195 100644
+--- a/meson.build
++++ b/meson.build
+@@ -284,7 +284,7 @@ fs = import('fs')
+ 
+ subdir('girepository')
+ subdir('tools')
+-subdir('giscanner')
++#subdir('giscanner')
+ 
+ # Not building gir data might be useful in cross-compilation
+ # scenarios where running target binaries through software emulation
+-- 
