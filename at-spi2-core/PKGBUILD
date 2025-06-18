@@ -1,0 +1,49 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=at-spi2-core
+pkgbase="${_realname}"
+pkgname="atk"
+pkgver=2.56.2
+pkgrel=1
+pkgdesc="Interface definitions of accessibility infrastructure"
+arch=('i686' 'x86_64')
+url='https://gnome.pages.gitlab.gnome.org/at-spi2-core/atk/'
+msys2_repository_url='https://gitlab.gnome.org/GNOME/at-spi2-core'
+license=('spdx:LGPL-2.1-or-later')
+depends=(
+  'gettext'
+  'glib2'
+)
+makedepends=(
+  'gcc'
+  'gettext-devel'
+  'libxml2-devel'
+  'glib2-devel'
+  'meson'
+  'ninja'
+  'pkgconf'
+)
+source=("https://download.gnome.org/sources/at-spi2-core/${pkgver%.*}/${_realname}-${pkgver}.tar.xz")
+sha256sums=('e1b1c9836a8947852f7440c32e23179234c76bd98cd9cc4001f376405f8b783b')
+
+build() {
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    --prefix="${MSYSTEM_PREFIX}" \
+    --buildtype plain \
+    --wrap-mode=nodownload \
+    --default-library=both \
+    -Datk_only=true \
+    -Dintrospection=disabled \
+    "${_realname}-${pkgver}" \
+    "build-${MSYSTEM_CARCH}"
+
+  ${MSYSTEM_PREFIX}/bin/meson compile -C "build-${MSYSTEM_CARCH}"
+}
+
+package() {
+  ${MSYSTEM_PREFIX}/bin/meson install -C "build-${MSYSTEM_CARCH}" --destdir "${pkgdir}"
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+}
