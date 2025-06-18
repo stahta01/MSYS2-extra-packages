@@ -1,0 +1,53 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=adwaita-icon-theme
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=48.0
+pkgrel=1
+pkgdesc="GNOME standard icons"
+arch=('i686' 'x86_64')
+url="https://gitlab.gnome.org/GNOME/adwaita-icon-theme"
+license=("spdx:LGPL-3.0-or-later OR CC-BY-SA-3.0")
+makedepends=(
+  #"gtk3"
+  'meson'
+  'ninja'
+  'pkgconf'
+)
+depends=(
+  'adwaita-icon-theme-legacy'
+  'hicolor-icon-theme'
+  #'librsvg'
+  'gtk-update-icon-cache'
+)
+source=(
+  "https://download.gnome.org/sources/${_realname}/${pkgver:0:2}/${_realname}-${pkgver}.tar.xz"
+)
+noextract=("${_realname}-${pkgver}.tar.xz")
+sha256sums=('847068888650d9673115be6dbf2bfdc31a46aebc528a6a9db4420e60e656b8d4')
+
+prepare() {
+  tar -xf "${_realname}-${pkgver}.tar.xz" || tar -xf "${_realname}-${pkgver}.tar.xz"
+}
+
+build() {
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    "${MSYSTEM_PREFIX}"/bin/meson setup \
+      --prefix="${MSYSTEM_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --buildtype=plain \
+      "${_realname}-${pkgver}" \
+      "build-${MSYSTEM_CARCH}"
+
+  "${MSYSTEM_PREFIX}"/bin/meson compile -C "build-${MSYSTEM_CARCH}"
+}
+
+package() {
+  "${MSYSTEM_PREFIX}"/bin/meson install -C "build-${MSYSTEM_CARCH}" --destdir "${pkgdir}"
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}"/COPYING "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}"/COPYING_LGPL "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING_LGPL"
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}"/COPYING_CCBYSA3 "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING_CCBYSA3"
+}
