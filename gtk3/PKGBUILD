@@ -1,0 +1,172 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=gtk3
+pkgbase=${_realname}
+pkgname=("${_realname}" "gtk-update-icon-cache")
+pkgver=3.24.49
+pkgrel=1
+pkgdesc="GObject-based multi-platform GUI toolkit (v3)"
+arch=('i686' 'x86_64')
+url="https://www.gtk.org/"
+msys2_repository_url="https://gitlab.gnome.org/GNOME/gtk/-/tree/gtk-3-24"
+msys2_references=(
+  'archlinux: gtk3'
+  "cpe: cpe:/a:gnome:gtk"
+  "cpe: cpe:/a:gtk:gtk%2b"
+)
+license=("spdx:LGPL-2.1-or-later")
+makedepends=('gcc'
+             'meson'
+             'pkgconf'
+             'gtk-doc'
+             'glib2-devel'
+             'libexpat-devel' # Needed to find cairo
+             'brotli-devel'   # Needed to find cairo
+             'sassc'
+             'libxslt')
+depends=('gcc-libs'
+         'adwaita-icon-theme'
+         'atk'
+         'cairo'
+         'gdk-pixbuf2'
+         'glib2'
+         'json-glib'
+         'libepoxy'
+         'pango'
+         'shared-mime-info')
+source=("https://download.gnome.org/sources/gtk/${pkgver%.*}/gtk-${pkgver}.tar.xz"
+        "0003-gtkwindow-Don-t-force-enable-CSD-under-Windows.patch"
+        "0004-Disable-low-level-keyboard-hook.patch"
+        "0005-meson-fix-linker-flags-pkgconfig.patch"
+        "gtk-query-immodules-3.0.hook.in"
+        "gtk-update-icon-cache.hook.in"
+        "gtk-update-icon-cache.script.in")
+sha256sums=('5ea52c6a28f0e5ecf2e9a3c2facbb30d040b73871fcd5f33cd1317e9018a146e'
+            'b84a7f38f0af80680bee143d431f2a7bae53899efb337de0f67a1b4d9b59fa02'
+            'e553083298495f9581ae1454b1046a22b83e81862311b30de984057eec859708'
+            'f006498eaf5e93a927f1ee966512f7f059e66d3f47433eedab5c0f08692bdfac'
+            'ecbad7e1db0d5566f12c13378e47f64b69eee452a1f9b765c1ab459633bba0d4'
+            'f9cab8eab937a3741104daabcaffbdd662e31da2905f1766f96ecafab84cefd5'
+            '8a9d5b43a7fc0cca2820d8728cf67227e97108b8860e9092ad217f8b2758b8e2')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Np1 -i "${srcdir}/$_patch"
+  done
+}
+
+prepare() {
+  cd "${srcdir}/gtk-${pkgver}"
+
+  # https://gitlab.gnome.org/GNOME/gtk/issues/760
+  apply_patch_with_msg \
+    0003-gtkwindow-Don-t-force-enable-CSD-under-Windows.patch
+
+  apply_patch_with_msg \
+    0004-Disable-low-level-keyboard-hook.patch
+
+  # https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/5458
+  apply_patch_with_msg \
+    0005-meson-fix-linker-flags-pkgconfig.patch
+}
+
+build() {
+  mkdir -p "${srcdir}"/build-${MSYSTEM_CARCH} && cd "${srcdir}"/build-${MSYSTEM_CARCH}
+
+  declare -a _extra_config
+  if check_option "debug" "n"; then
+    _extra_config+=("--buildtype=release")
+  else
+    _extra_config+=("--buildtype=debug")
+  fi
+
+  if [[ ${CARCH} != aarch64 ]]; then
+    _extra_config+=("-Dman=true")
+  fi
+
+  CFLAGS+=" -DG_ENABLE_DEBUG"  # so the GTK_DEBUG env var works
+  CFLAGS+=" -Wno-deprecated-declarations"
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    --prefix="${MSYSTEM_PREFIX}" \
+    --wrap-mode=nodownload \
+    --default-library=both \
+    --auto-features=disabled \
+    "${_extra_config[@]}" \
+    -Dbroadway_backend=true \
+    -Dwayland_backend=false \
+    -Dx11_backend=false \
+    -Dwin32_backend=true \
+    -Dintrospection=false \
+    -Dxinerama=no \
+    -Dtests=false \
+    "../gtk-${pkgver}"
+
+  ${MSYSTEM_PREFIX}/bin/meson compile
+}
+
+package_gtk3() {
+  depends+=("gtk-update-icon-cache")
+
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/meson install
+
+  # the hook needs this directory to exist, even if empty
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/lib/gtk-3.0/3.0.0/immodules
+  for hook in gtk-query-immodules-3.0; do
+    local hook_path="${srcdir}/${hook}.hook";
+    cp "${srcdir}/${hook}.hook.in" "${hook_path}"
+    sed -s "s|@MINGW_HOOK_TARGET_PREFIX@|${MSYSTEM_PREFIX:1}|g" -i "${hook_path}"
+    sed -s "s|@_MINGW_PREFIX_@|${MSYSTEM_PREFIX}|g" -i "${hook_path}"
+    install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "${hook_path}"
+  done
+
+  mv "${pkgdir}"${MSYSTEM_PREFIX}/bin/gtk-update-icon-cache "$srcdir"
+  if [[ ${CARCH} != aarch64 ]]; then
+    mv "${pkgdir}"${MSYSTEM_PREFIX}/share/man/man1/gtk-update-icon-cache.1 "$srcdir"
+  fi
+
+  install -Dm644 "${srcdir}/gtk-${pkgver}/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+}
+
+package_gtk-update-icon-cache() {
+  pkgdesc="GTK+ icon cache updater"
+  depends=('gdk-pixbuf2'
+           #'librsvg'
+           'hicolor-icon-theme')
+
+  for hook in gtk-update-icon-cache; do
+    local hook_path="${srcdir}/${hook}.hook";
+    cp "${srcdir}/${hook}.hook.in" "${hook_path}"
+    sed -s "s|@MINGW_HOOK_TARGET_PREFIX@|${MSYSTEM_PREFIX:1}|g" -i "${hook_path}"
+    sed -s "s|@_MINGW_PREFIX_@|${MSYSTEM_PREFIX}|g" -i "${hook_path}"
+    install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "${hook_path}"
+  done
+
+  for script in gtk-update-icon-cache; do
+    local script_path="${srcdir}/${script}.script";
+    cp "${srcdir}/${script}.script.in" "${script_path}"
+    sed -s "s|@_MINGW_PREFIX_@|${MSYSTEM_PREFIX}|g" -i "${script_path}"
+    install -Dt "$pkgdir/usr/share/libalpm/scripts" -m644 "${script_path}"
+  done
+
+  install -Dt "${pkgdir}${MSYSTEM_PREFIX}/bin" gtk-update-icon-cache
+  if [[ ${CARCH} != aarch64 ]]; then
+    install -Dt "${pkgdir}${MSYSTEM_PREFIX}/share/man/man1" gtk-update-icon-cache.1
+  fi
+  cp "${pkgdir}"${MSYSTEM_PREFIX}/bin/gtk-update-icon-cache{,-3.0}.exe
+}
+
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name#}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done
