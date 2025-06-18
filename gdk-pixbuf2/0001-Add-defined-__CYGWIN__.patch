@@ -1,0 +1,37 @@
+From 7d1623f70b2c1a9a08639bec1d0d586983cdc68c Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Wed, 18 Jun 2025 13:06:21 -0400
+Subject: Add " || defined(__CYGWIN__)"
+
+---
+ gdk-pixbuf/gdk-pixbuf-io.c | 2 +-
+ gdk-pixbuf/queryloaders.c  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gdk-pixbuf/gdk-pixbuf-io.c b/gdk-pixbuf/gdk-pixbuf-io.c
+index e1df5900f..d58a3c892 100644
+--- a/gdk-pixbuf/gdk-pixbuf-io.c
++++ b/gdk-pixbuf/gdk-pixbuf-io.c
+@@ -222,7 +222,7 @@ gdk_pixbuf_get_toplevel (void)
+     bin_dir = g_dirname(pathbuf);
+     toplevel = g_build_path (G_DIR_SEPARATOR_S, bin_dir, "..", NULL);
+     g_free (bin_dir);
+-#elif defined (OS_LINUX)
++#elif defined (OS_LINUX) || defined(__CYGWIN__)
+     gchar *exe_path, *bin_dir;
+ 
+     exe_path = g_file_read_link ("/proc/self/exe", NULL);
+diff --git a/gdk-pixbuf/queryloaders.c b/gdk-pixbuf/queryloaders.c
+index baa9a5c59..848193913 100644
+--- a/gdk-pixbuf/queryloaders.c
++++ b/gdk-pixbuf/queryloaders.c
+@@ -140,7 +140,7 @@ get_toplevel (void)
+                 bin_dir = g_dirname (pathbuf);
+                 toplevel = g_build_path (G_DIR_SEPARATOR_S, bin_dir, "..", NULL);
+                 g_free (bin_dir);
+-#elif defined (OS_LINUX) || defined (__MINGW32__)
++#elif defined (OS_LINUX) || defined (__MINGW32__) || defined(__CYGWIN__)
+                 gchar *exe_path, *bin_dir;
+ 
+                 exe_path = g_file_read_link ("/proc/self/exe", NULL);
+-- 

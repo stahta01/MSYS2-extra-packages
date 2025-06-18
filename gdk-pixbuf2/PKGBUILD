@@ -1,0 +1,158 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Ray Donnelly <mingw.android@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+
+_realname=gdk-pixbuf2
+pkgbase=${_realname}
+pkgname=("${_realname}")
+pkgver=2.42.12
+pkgrel=4
+pkgdesc="An image loading library"
+arch=('i686' 'x86_64')
+url="https://gitlab.gnome.org/GNOME/gdk-pixbuf"
+msys2_repository_url=${url}
+msys2_references=(
+  "cpe: cpe:/a:gnome:gdk-pixbuf"
+  "cpe: cpe:/a:gnome:gdkpixbuf"
+)
+license=('spdx:LGPL-2.1-or-later')
+makedepends=('gcc'
+             'glib2-devel'
+             'pkgconf'
+             'meson'
+             'gettext-devel'
+             'shared-mime-info'
+             'gi-docgen'
+             'python-docutils')
+depends=('gcc-libs'
+         'gettext'
+         'glib2'
+         'libjpeg-turbo'
+         'libpng'
+         'libtiff')
+optdepends=("libwmf: Load .wmf and .apm"
+            "libavif: Load .avif"
+            "libheif: Load .heif, .heic, and .avif"
+            "libjxl: Load .jxl"
+            "librsvg: Load .svg, .svgz, and .svg.gz"
+            "webp-pixbuf-loader: Load .webp")
+install=${_realname}.install
+source=("https://download.gnome.org/sources/gdk-pixbuf/${pkgver%.*}/gdk-pixbuf-${pkgver}.tar.xz"
+        0001-Add-defined-__CYGWIN__.patch
+        0002-Disable-find-g-ir-scanner.patch
+        0004-build-all-loaders-plus-gdi.patch
+        gdk-pixbuf-query-loaders.hook.in)
+noextract=("gdk-pixbuf-${pkgver}.tar.xz")
+sha256sums=('b9505b3445b9a7e48ced34760c3bcb73e966df3ac94c95a148cb669ab748e3c7'
+            '317922d44a1e634303149cb7d770f8a83624fecbb5bde71bc1a81b9f149d4f7d'
+            'acfc0ec3c33e378a4b83e798087078fcb55f5cb35070e27d25be95c27a693476'
+            'edc53917fc286f1eaca1cf5a4411feb6253543d8373a7d661a5dd354c31db015'
+            '7fe1e1ad408c7f15778bc051d4813a36a686709396cad5ce34dec509328d1545')
+
+_apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -p1 -i "${srcdir}/${_patch}"
+  done
+}
+
+prepare() {
+  cd "${srcdir}"/
+  tar --exclude tests/test-images/reftests/tga -xf "gdk-pixbuf-${pkgver}.tar.xz"
+  cd "${srcdir}"/gdk-pixbuf-${pkgver}
+
+  _apply_patch_with_msg \
+    0001-Add-defined-__CYGWIN__.patch \
+    0002-Disable-find-g-ir-scanner.patch
+
+  # build all loaders + all gdi loaders static and just don't register
+  # the gdi loaders we don't need so the external ones get used
+  # (everything except wmf/emf atm)
+  _apply_patch_with_msg 0004-build-all-loaders-plus-gdi.patch
+}
+
+build() {
+  local -a _static_flags=(
+    -DGIO_STATIC_COMPILATION
+    -DGLIB_STATIC_COMPILATION
+    -DGMODULE_STATIC_COMPILATION
+    -DGOBJECT_STATIC_COMPILATION
+  )
+
+  local -a _meson_options=(
+    --prefix=${MSYSTEM_PREFIX}
+    --wrap-mode=nodownload
+    --auto-features=enabled
+    --buildtype=plain
+    -Dinstalled_tests=false
+    -Drelocatable=true
+    -Dnative_windows_loaders=true
+    -Dothers=enabled
+  )
+
+  # Does not enable DLL_EXPORT, keeps DllMain far away (#17643)
+  # gir disabled. ERROR: can't resolve libraries to shared libraries
+  CFLAGS+=" ${_static_flags[@]}" \
+  CXXFLAGS+=" ${_static_flags[@]}" \
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    "${_meson_options[@]}" \
+    --default-library=static \
+    -Dbuiltin_loaders=windows \
+    -Dgtk_doc=false \
+    -Dintrospection=disabled \
+    -Dtests=false \
+    "gdk-pixbuf-${pkgver}" \
+    "build-${MSYSTEM_CARCH}-static"
+
+  ${MSYSTEM_PREFIX}/bin/meson compile -C "build-${MSYSTEM_CARCH}-static"
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    "${_meson_options[@]}" \
+    --default-library=shared \
+    -Dbuiltin_loaders=all \
+    -Dgtk_doc=false \
+    -Dintrospection=disabled \
+    -Dtests=true \
+    "gdk-pixbuf-${pkgver}" \
+    "build-${MSYSTEM_CARCH}-shared"
+
+  ${MSYSTEM_PREFIX}/bin/meson compile -C "build-${MSYSTEM_CARCH}-shared"
+}
+
+package_gdk-pixbuf2() {
+  ${MSYSTEM_PREFIX}/bin/meson install -C "${srcdir}/build-${MSYSTEM_CARCH}-static" --destdir "${pkgdir}"
+  ${MSYSTEM_PREFIX}/bin/meson install -C "${srcdir}/build-${MSYSTEM_CARCH}-shared" --destdir "${pkgdir}"
+
+  for hook in gdk-pixbuf-query-loaders; do
+    local hook_path="${srcdir}/${hook}.hook";
+    cp "${srcdir}/${hook}.hook.in" "${hook_path}"
+    sed -s "s|@MINGW_HOOK_TARGET_PREFIX@|${MSYSTEM_PREFIX:1}|g" -i "${hook_path}"
+    sed -s "s|@_MINGW_PREFIX_@|${MSYSTEM_PREFIX}|g" -i "${hook_path}"
+    install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 "${hook_path}"
+  done
+
+  #mkdir -p dest${MSYSTEM_PREFIX}/share
+  #mv "${pkgdir}${MSYSTEM_PREFIX}"/share/doc dest${MSYSTEM_PREFIX}/share/doc
+
+  install -Dm644 "${srcdir}/gdk-pixbuf-${pkgver}/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+}
+
+package_gdk-pixbuf2-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+  optdepends=()
+
+  mv dest/* "${pkgdir}"
+}
+
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name#}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done

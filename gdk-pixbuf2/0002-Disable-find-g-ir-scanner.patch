@@ -1,0 +1,26 @@
+From 7b094d4287ec972c46b9e8405708b096d5fc3125 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Wed, 18 Jun 2025 13:29:46 -0400
+Subject: Disable find g-ir-scanner
+
+---
+ gdk-pixbuf/meson.build | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gdk-pixbuf/meson.build b/gdk-pixbuf/meson.build
+index 570625bfe..ee17fc376 100644
+--- a/gdk-pixbuf/meson.build
++++ b/gdk-pixbuf/meson.build
+@@ -217,8 +217,9 @@ gdkpixbuf = library('gdk_pixbuf-2.0',
+                     ],
+                     install: true)
+ 
+-gir = find_program('g-ir-scanner', required : get_option('introspection'))
+-build_gir = gir.found() and (not meson.is_cross_build() or get_option('introspection').enabled())
++#gir = find_program('g-ir-scanner', required : get_option('introspection'))
++#build_gir = gir.found() and (not meson.is_cross_build() or get_option('introspection').enabled())
++build_gir = false
+ 
+ if build_gir
+   gir_args = [
+-- 
