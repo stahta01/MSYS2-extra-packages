@@ -1,0 +1,54 @@
+# Contributor: Ignacio Casal Quinteiro <icq@gnome.org>
+
+_realname=json-glib
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=1.10.6
+pkgrel=1
+arch=('i686' 'x86_64')
+pkgdesc="JSON-GLib implements a full suite of JSON-related tools using GLib and GObject"
+depends=('glib2')
+makedepends=('meson'
+             'ninja'
+             'gcc'
+             'pkgconf'
+             'glib2-devel'
+             'python-docutils')
+license=('spdx:LGPL-2.1-or-later')
+url="https://gnome.pages.gitlab.gnome.org/json-glib/"
+source=("https://download.gnome.org/sources/${_realname}/${pkgver%.*}/${_realname}-${pkgver}.tar.xz")
+sha256sums=('77f4bcbf9339528f166b8073458693f0a20b77b7059dbc2db61746a1928b0293')
+msys2_repository_url="https://gitlab.gnome.org/GNOME/json-glib"
+noextract=("${_realname}-${pkgver}.tar.xz")
+
+prepare() {
+  bsdtar -xf "${_realname}-${pkgver}.tar.xz" || bsdtar -xf "${_realname}-${pkgver}.tar.xz" || true
+  cd "${srcdir}"/${_realname}-${pkgver}
+}
+
+build() {
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  meson setup \
+    --prefix="${MSYSTEM_PREFIX}" \
+    --wrap-mode=nodownload \
+    --auto-features=enabled \
+    --buildtype plain \
+    -Dman=true \
+    -Dinstalled_tests=false \
+    -Ddocumentation=disabled \
+    -Dintrospection=disabled \
+    "build-${MSYSTEM_CARCH}" \
+    "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM_CARCH}"
+}
+
+check() {
+  meson test -C "build-${MSYSTEM_CARCH}" || warning "Tests failed"
+}
+
+package() {
+  meson install -C "build-${MSYSTEM_CARCH}" --destdir "${pkgdir}"
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+}
