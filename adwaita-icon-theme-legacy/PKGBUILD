@@ -1,0 +1,44 @@
+# Contributor: Christoph Reiter <reiter.christoph@gmail.com>
+
+_realname=adwaita-icon-theme-legacy
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=46.2
+pkgrel=1
+pkgdesc="Icon theme that provides fallback icons for old apps relying on global icon themes"
+arch=('i686' 'x86_64')
+url="https://gitlab.gnome.org/GNOME/adwaita-icon-theme-legacy"
+license=("spdx:LGPL-3.0-or-later OR CC-BY-SA-3.0")
+makedepends=(
+  'meson'
+  'ninja'
+  'pkgconf'
+)
+depends=(
+  'hicolor-icon-theme'
+  'gtk-update-icon-cache'
+)
+source=(
+  "https://download.gnome.org/sources/${_realname}/${pkgver:0:2}/${_realname}-${pkgver}.tar.xz"
+)
+sha256sums=('548480f58589a54b72d18833b755b15ffbd567e3187249d74e2e1f8f99f22fb4')
+
+build() {
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    "${MSYSTEM_PREFIX}"/bin/meson setup \
+      --prefix="${MSYSTEM_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --buildtype=plain \
+      "${_realname}-${pkgver}" \
+      "build-${MSYSTEM_CARCH}"
+
+  "${MSYSTEM_PREFIX}"/bin/meson compile -C "build-${MSYSTEM_CARCH}"
+}
+
+package() {
+  "${MSYSTEM_PREFIX}"/bin/meson install -C "build-${MSYSTEM_CARCH}" --destdir "${pkgdir}"
+
+  # https://gitlab.gnome.org/GNOME/adwaita-icon-theme-legacy/-/issues/3
+  mv "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/adwaita-icon-theme" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}"
+}
