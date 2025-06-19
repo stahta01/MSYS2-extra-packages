@@ -6,7 +6,7 @@ pkgbase=${_realname}
 pkgname="${_realname}"
 _commit='b43e7c6f3cf7855e16170a06d3a9c7234c60ca94'
 pkgver=1.18.2
-pkgrel=2
+pkgrel=3
 pkgdesc="Cairo vector graphics library"
 arch=('i686' 'x86_64')
 url="https://cairographics.org/"
@@ -15,27 +15,27 @@ msys2_references=(
 )
 license=('spdx:LGPL-2.1-or-later' OR 'spdx:MPL-1.1')
 makedepends=('gcc'
-             "meson"
-             "ninja"
-             "pkgconf"
-             "glib2"
-             "python"
-             #"python-fonttools"
+             'meson'
+             'ninja'
+             'pkgconf'
+             'glib2-devel'
+             'python'
              'libexpat-devel'
              'gettext-devel'
              'liblzo2-devel'
              'glib2-devel'
              'brotli-devel'
+             'zlib-devel'
             )
-depends=("gcc-libs"
+depends=('gcc-libs'
          'freetype'
-         "fontconfig"
-         "glib2"
+         'fontconfig'
+         'glib2'
          'gettext'
          'liblzo2'
-         "pixman"
-         "libpng"
-         "zlib"
+         'pixman'
+         'libpng'
+         'zlib'
         )
 optdepends=("glib2: libcairo-gobject")
 source=("https://cairographics.org/releases/cairo-${pkgver}.tar.xz")
@@ -44,8 +44,7 @@ sha256sums=('a62b9bb42425e844cc3d6ddde043ff39dbabedd1542eba57a2eb79f85889d45a')
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"
 
-  #patch -p1 -i ${srcdir}/0026-create-argb-fonts.all.patch
-  #patch -p1 -i ${srcdir}/0030-ucrt-clang-fixes.patch
+  #patch -p1 -i ${srcdir}/
 }
 
 build() {
@@ -54,6 +53,7 @@ build() {
     -DGLIB_STATIC_COMPILATION
     -DGMODULE_STATIC_COMPILATION
     -DGOBJECT_STATIC_COMPILATION
+    -DCAIRO_WIN32_STATIC_BUILD
   )
 
   local -a _meson_options
@@ -68,7 +68,7 @@ build() {
     -Dfreetype=enabled
     -Dpng=enabled
     -Dtee=enabled
-    -Dzlib=disabled
+    -Dzlib=enabled
     -Dxlib=disabled
     -Dxcb=disabled
     -Dspectre=disabled
@@ -88,22 +88,22 @@ build() {
     "${_meson_options[@]}" \
     --default-library=static \
     "${_realname}-${pkgver}" \
-    "build-${CARCH}-static"
+    "build-${MSYSTEM_CARCH}-static"
 
-  meson compile -C "build-${CARCH}-static"
+  meson compile -C "build-${MSYSTEM_CARCH}-static"
 
   ${MSYSTEM_PREFIX}/bin/meson setup \
     "${_meson_options[@]}" \
     --default-library=shared \
     "${_realname}-${pkgver}" \
-    "build-${CARCH}-shared"
+    "build-${MSYSTEM_CARCH}-shared"
 
-  meson compile -C "build-${CARCH}-shared"
+  meson compile -C "build-${MSYSTEM_CARCH}-shared"
 }
 
 package() {
-  meson install -C "build-${CARCH}-static" --destdir "${pkgdir}"
-  meson install -C "build-${CARCH}-shared" --destdir "${pkgdir}"
+  meson install -C "build-${MSYSTEM_CARCH}-static" --destdir "${pkgdir}"
+  meson install -C "build-${MSYSTEM_CARCH}-shared" --destdir "${pkgdir}"
 
   install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING"          "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
   install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING-LGPL-2.1" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING-LGPL-2.1"
