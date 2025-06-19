@@ -1,0 +1,126 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=librsvg
+pkgbase=${_realname}
+pkgname=("${_realname}"
+         "${_realname}-docs")
+pkgver=2.60.0
+pkgrel=1
+pkgdesc="SVG rendering library"
+arch=('i686' 'x86_64')
+url="https://wiki.gnome.org/Projects/LibRsvg"
+msys2_references=(
+  "cpe: cpe:/a:gnome:librsvg"
+  "purl: pkg:cargo/librsvg"
+)
+license=("spdx:LGPL-2.1-or-later")
+makedepends=('meson'
+             'ninja'
+             #'gobject-introspection'
+             #'vala'
+             #'rust'
+             'cargo-c'
+             'gi-docgen'
+             'python-docutils'
+             'gcc')
+depends=('gdk-pixbuf2'
+         'pango'
+         'cairo'
+         'libxml2')
+optdepends=("gtk3: for rsvg-view-3")
+source=("https://download.gnome.org/sources/librsvg/${pkgver%.*}/${_realname}-${pkgver}.tar.xz"
+        "glib-0.20.0.tar.gz::https://crates.io/api/v1/crates/glib/0.20.0/download"
+        "glib-rs.patch"
+        "0004-add-option-for-disabling-convert.patch")
+sha256sums=('0b6ffccdf6e70afc9876882f5d2ce9ffcf2c713cbaaf1ad90170daa752e1eec3'
+            'fee90a615ce05be7a32932cfb8adf2c4bbb4700e80d37713c981fb24c0c56238'
+            'e0f5accba0ff47d9cdf79f506ea76ea0b373edaf6845a23180a00c15e0a8691d'
+            '0e042886d313b37f5db5e0405a5e37b3d3e4a6c66f94186677406136fa0e7a17')
+msys2_repository_url="https://gitlab.gnome.org/GNOME/librsvg"
+noextract=("${_realname}-${pkgver}.tar.xz")
+
+prepare() {
+  bsdtar -xf "${_realname}-${pkgver}.tar.xz" 2>/dev/null || true
+
+  # Patch bug in glib rust bindings
+  # See: https://github.com/gtk-rs/gtk-rs-core/pull/1199
+  # Version of glib-rs should match what is in librsvg Cargo.lock
+  cd "${srcdir}/glib-0.20.0"
+  patch -p1 -i "${srcdir}/glib-rs.patch"
+
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  # fails to link for the static build, so skip for now
+  patch -p1 -i "${srcdir}/0004-add-option-for-disabling-convert.patch"
+
+  echo "" >> Cargo.toml
+  echo "[patch.crates-io]" >> Cargo.toml
+  echo "glib = { path = '../glib-0.20.0' }" >> Cargo.toml
+  cargo update --package glib
+  cargo fetch --locked
+}
+
+build() {
+  # https://github.com/msys2/MINGW-packages/pull/13622#issuecomment-1285820970
+  export WINAPI_NO_BUNDLED_LIBRARIES=1
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    meson setup \
+      --prefix="${MSYSTEM_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --default-library=static \
+      --buildtype=plain \
+      -Dintrospection=disabled \
+      -Davif=disabled \
+      -Dtests=false \
+      -Ddocs=disabled \
+      -Dpixbuf-loader=disabled \
+      -Drsvg-convert=disabled \
+      "build-${MSYSTEM}-static" \
+      "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM}-static"
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    meson setup \
+      --prefix="${MSYSTEM_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --buildtype=plain \
+      -Davif=disabled \
+      "build-${MSYSTEM}" \
+      "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM}"
+}
+
+package_librsvg() {
+  conflicts=("${_realname}-2.40")
+  replaces=("${_realname}-2.40")
+
+  meson install -C "build-${MSYSTEM}-static" --destdir "${pkgdir}"
+  meson install -C "build-${MSYSTEM}" --destdir "${pkgdir}"
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/COPYING.LIB" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING.LIB"
+
+  mkdir -p dest${MSYSTEM_PREFIX}/share
+  mv "${pkgdir}${MSYSTEM_PREFIX}"/share/doc dest${MSYSTEM_PREFIX}/share/doc
+}
+
+package_librsvg-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv dest/* "${pkgdir}"
+}
+
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name#}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done
+# template end;
