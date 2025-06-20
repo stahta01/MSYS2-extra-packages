@@ -1,0 +1,11 @@
+--- origsrc/libtiff-v4.7.0/libtiff/tiffio.h	2024-09-11 16:41:37.000000000 +0900
++++ src/libtiff-v4.7.0/libtiff/tiffio.h	2024-10-13 07:36:23.455911100 +0900
+@@ -85,7 +85,7 @@
+  */
+ 
+ #if defined(_WIN32)
+-#if !defined(__CYGWIN) && !defined(AVOID_WIN32_FILEIO) &&                      \
++#if !defined(__CYGWIN__) && !defined(AVOID_WIN32_FILEIO) &&                      \
+     !defined(USE_WIN32_FILEIO)
+ #define AVOID_WIN32_FILEIO
+ #endif

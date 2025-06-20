@@ -6,7 +6,7 @@ pkgbase=${_realname}
 pkgname=("${_realname}"
          "${_realname}-docs")
 pkgver=4.7.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Library for manipulation of TIFF images"
 arch=('i686' 'x86_64')
 url="https://libtiff.gitlab.io/libtiff/"
@@ -24,22 +24,30 @@ depends=('gcc-libs'
 makedepends=('gcc'
              'autotools')
 source=(https://download.osgeo.org/libtiff/tiff-${pkgver}.tar.gz
+        4.7.0-cygwin.patch
         0001-Change-swap-logic.patch
         0002-libtiff-install-headers.patch
-        0003-add-include.patch)
+        0003-add-include.patch
+        0004-Add-not-defined-__CYGWIN__.patch)
 sha256sums=('67160e3457365ab96c5b3286a0903aa6e78bdc44c4bc737d2e486bcecb6ba976'
+            'e4de85d27d8217d94caf69dc72911981b04d0be97151f046e9a9aee9dba8600c'
             'cf0b14956b865fa4a6af35554aba3cf2087ac155608773cc637173d026f96510'
             '493742947c8667655b6b89f2d7d27e92e1438a490ed86f50811112394b432a12'
-            'e983ee210908f0ed9f64ce6ded5f76ee0d8591d6fdf108dbe8e68353230b5a2a')
+            'e983ee210908f0ed9f64ce6ded5f76ee0d8591d6fdf108dbe8e68353230b5a2a'
+            '35f09023cf67c66fc51cca8c4434367d47bc5b494a8f687da8ace515f5e3aac2')
 prepare() {
   cd tiff-${pkgver}
+  patch -p2 -i "${srcdir}/4.7.0-cygwin.patch"
   patch -p1 -i "${srcdir}/0001-Change-swap-logic.patch"
   patch -p1 -i "${srcdir}/0002-libtiff-install-headers.patch"
   patch -p1 -i "${srcdir}/0003-add-include.patch"
+  patch -p1 -i "${srcdir}/0004-Add-not-defined-__CYGWIN__.patch"
 
   sed -i 's/strnicmp/strncasecmp/'  contrib/iptcutil/iptcutil.c
   sed -i 's/_fileno/fileno/'        contrib/iptcutil/iptcutil.c
   sed -i 's/_O_BINARY/O_BINARY/'    contrib/iptcutil/iptcutil.c
+  #sed -i 's/if defined(_WIN32) \&\&          /if defined(_WIN32) \&\& !(defined(__CYGWIN__)) \&\&/'  libtiff/tiffiop.h
+  #sed -i 's/ifdef _WIN32/if defined(_WIN32) \&\& !(defined(__CYGWIN__))/' libtiff/tif_unix.c
 
   # autoreconf to get updated libtool files for clang support
   autoreconf -fiv
@@ -48,7 +56,7 @@ prepare() {
 build() {
   export CFLAGS+=" -fno-strict-aliasing"
   export CXXFLAGS+=" -fno-strict-aliasing"
-  export CPPFLAGS+=" -D_WIN32"
+  export CPPFLAGS+=" -D_WIN32"  # The missing define of "_WIN32" caused build issues for 32 bit
 
   mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}-static" && cd "${srcdir}/build-${MSYSTEM_CARCH}-static"
 
