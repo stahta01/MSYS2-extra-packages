@@ -1,0 +1,46 @@
+# Contributor: Christoph Reiter <reiter.christoph@gmail.com>
+
+_realname=sassc
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=3.6.2
+pkgrel=1
+pkgdesc="C implementation of Sass CSS preprocessor"
+arch=('i686' 'x86_64')
+url="https://sass-lang.com/libsass#sassc"
+msys2_repository_url="https://github.com/sass/sassc"
+msys2_references=(
+  "cpe: cpe:/a:sass-lang:sassc"
+)
+license=("spdx:MIT")
+depends=('libsass')
+makedepends=('autotools'
+             'gcc')
+source=("https://github.com/sass/${_realname}/archive/${pkgver}/${_realname}-${pkgver}.tar.gz")
+sha256sums=('608dc9002b45a91d11ed59e352469ecc05e4f58fc1259fc9a9f5b8f0f8348a03')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+  autoreconf -vfi
+}
+
+build() {
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}" && cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ../${_realname}-${pkgver}/configure \
+    --prefix=${MSYSTEM_PREFIX} \
+    --build=${MSYSTEM_CHOST} \
+    --host=${MSYSTEM_CHOST} \
+    --target=${MSYSTEM_CHOST}
+
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  make DESTDIR="${pkgdir}" install
+
+  install -Dm644 "${srcdir}"/${_realname}-${pkgver}/LICENSE \
+    "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE
+}
