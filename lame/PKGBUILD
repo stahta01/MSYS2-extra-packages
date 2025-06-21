@@ -5,7 +5,7 @@
 
 pkgname=lame
 pkgver=3.100
-pkgrel=5
+pkgrel=6
 pkgdesc='A high quality MPEG Audio Layer III (MP3) encoder'
 arch=('i686' 'x86_64')
 url=http://lame.sourceforge.net/
@@ -49,6 +49,8 @@ build() {
     "${_arch_config[@]}"
 
   make clean
+  # sed likely needed because of gcc 13.4.0
+  sed -i '/^lame_init_old$/d' include/libmp3lame.sym
   make
 }
 
