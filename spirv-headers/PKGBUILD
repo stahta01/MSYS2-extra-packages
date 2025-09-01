@@ -1,0 +1,44 @@
+# Contributor: Christoph Reiter <reiter.christoph@gmail.com>
+# Contributor: Biswapriyo Nath <nathbappai@gmail.com>
+
+_realname=spirv-headers
+pkgbase=${_realname}
+pkgname="${_realname}"
+epoch=2
+pkgver=1.4.321.0
+pkgrel=1
+pkgdesc='Machine-readable files for the SPIR-V Registry'
+arch=('i686' 'x86_64')
+url='https://www.khronos.org/registry/spir-v/'
+msys2_repository_url="https://github.com/KhronosGroup/SPIRV-Headers"
+license=('spdx:MIT')
+groups=("vulkan-devel")
+makedepends=('gcc'
+             "cmake"
+             "ninja")
+source=(https://github.com/KhronosGroup/SPIRV-Headers/archive/vulkan-sdk-${pkgver}/${_realname}-${pkgver}.tar.gz)
+sha256sums=('5bbea925663d4cd2bab23efad53874f2718248a73dcaf9dd21dff8cb48e602fc')
+
+prepare() {
+  cd SPIRV-Headers-vulkan-sdk-${pkgver}
+}
+
+build() {
+  mkdir -p build-${MSYSTEM} && cd build-${MSYSTEM}
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+    -G "Ninja" \
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+    ../SPIRV-Headers-vulkan-sdk-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --build ./
+}
+
+package() {
+  cd "${srcdir}"/build-${MSYSTEM}
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install ./
+
+  install -Dm644 "${srcdir}"/SPIRV-Headers-vulkan-sdk-${pkgver}/README.md "${pkgdir}"${MSYSTEM_PREFIX}/share/doc/${_realname}/README.md
+  install -Dm644 "${srcdir}"/SPIRV-Headers-vulkan-sdk-${pkgver}/LICENSE "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE
+}
