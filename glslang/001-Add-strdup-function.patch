@@ -1,0 +1,37 @@
+From b83227eccf477500006f6865eba1734718c2bc8b Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Wed, 3 Sep 2025 20:37:26 -0400
+Subject: Add strdup function
+
+---
+ StandAlone/StandAlone.cpp | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/StandAlone/StandAlone.cpp b/StandAlone/StandAlone.cpp
+index b1853b02..ee070caa 100644
+--- a/StandAlone/StandAlone.cpp
++++ b/StandAlone/StandAlone.cpp
+@@ -63,6 +63,22 @@
+ #include <thread>
+ #include <type_traits>
+ 
++#ifndef strdup
++  char *strdup (const char * source){
++    int num;
++    char *destination;
++
++    num = strlen(source) + 1;
++
++    destination = (char*)malloc(sizeof(char)*num);
++    if( destination != NULL ){
++      strncpy(destination, source, num);
++    }
++
++    return destination;
++  }
++#endif
++
+ #include "../glslang/OSDependent/osinclude.h"
+ 
+ // Build-time generated includes
+-- 
