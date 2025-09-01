@@ -1,0 +1,92 @@
+# Contributor: J. Peter Mugaas <jpmugaas@suddenlink.net>
+# Contributor: Biswapriyo Nath <nathbappai@gmail.com>
+
+_realname=spirv-tools
+pkgbase=${_realname}
+pkgname=("${_realname}")
+epoch=3
+pkgver=1.4.321.0
+pkgrel=1
+pkgdesc="API and commands for processing SPIR-V modules"
+arch=('i686' 'x86_64')
+url="https://www.khronos.org/vulkan/"
+msys2_repository_url="https://github.com/KhronosGroup/SPIRV-Tools"
+license=('spdx:Apache-2.0')
+groups=("vulkan-devel")
+depends=('gcc-libs')
+makedepends=('gcc'
+             "cmake"
+             "ninja"
+             "python"
+             "spirv-headers")
+source=("https://github.com/KhronosGroup/SPIRV-Tools/archive/vulkan-sdk-${pkgver}/${_realname}-${pkgver}.tar.gz"
+        002-Do-not-statically-link-to-the-C-runtime-with-mingw.patch)
+sha256sums=('8327fb8f3e9472346a004c91dbb83a6e5f3b36c3846c142cf8c0dc8fac8710f3'
+            'ff63fc6e786e6b40b3ec5fa7356b671a391e3c29b7660dcc87d799de49754d2a')
+
+prepare() {
+  cd SPIRV-Tools-vulkan-sdk-${pkgver}
+  patch -p1 -i "${srcdir}"/002-Do-not-statically-link-to-the-C-runtime-with-mingw.patch
+}
+
+build() {
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  echo "Building static library"
+  mkdir -p "${srcdir}"/build-${MSYSTEM}-static && cd "${srcdir}"/build-${MSYSTEM}-static
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+      -G "Ninja" \
+      -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+      "${extra_config[@]}" \
+      -DSPIRV_WERROR=OFF \
+      -DBUILD_SHARED_LIBS=OFF \
+      -DSPIRV_TOOLS_BUILD_STATIC=ON \
+      -DSPIRV_SKIP_EXECUTABLES=ON \
+      -DSPIRV_SKIP_TESTS=ON \
+      -DSPIRV-Headers_SOURCE_DIR=${MSYSTEM_PREFIX} \
+      -DPython3_EXECUTABLE=${MSYSTEM_PREFIX}/bin/python \
+      ../SPIRV-Tools-vulkan-sdk-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --build ./
+
+  echo "Building shared library"
+  mkdir -p "${srcdir}"/build-${MSYSTEM}-shared && cd "${srcdir}"/build-${MSYSTEM}-shared
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+      -G "Ninja" \
+      -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+      "${extra_config[@]}" \
+      -DSPIRV_WERROR=OFF \
+      -DBUILD_SHARED_LIBS=ON \
+      -DSPIRV_TOOLS_BUILD_STATIC=OFF \
+      -DSPIRV_SKIP_TESTS=ON \
+      -DSPIRV-Headers_SOURCE_DIR=${MSYSTEM_PREFIX} \
+      -DPython3_EXECUTABLE=${MSYSTEM_PREFIX}/bin/python \
+      ../SPIRV-Tools-vulkan-sdk-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --build ./
+}
+
+package() {
+  cd "${srcdir}"/build-${MSYSTEM}-static
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install ./
+
+  cd "${srcdir}"/build-${MSYSTEM}-shared
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install ./
+
+  install -dm755 "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}"
+  install -m644 "${srcdir}"/SPIRV-Tools-vulkan-sdk-${pkgver}/LICENSE "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/"
+
+  local _WIN_PREFIX=$(cygpath -am ${MSYSTEM_PREFIX})
+  for _f in "${pkgdir}${MSYSTEM_PREFIX}"/lib/pkgconfig/*.pc; do
+    sed -e "s|${_WIN_PREFIX}|${MSYSTEM_PREFIX}|g" -i ${_f}
+  done
+}
