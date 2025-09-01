@@ -1,0 +1,135 @@
+# Maintainer: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=mesa
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=25.1.7
+pkgrel=1
+pkgdesc="Open-source implementation of the OpenGL, Vulkan and OpenCL specifications"
+arch=('i686' 'x86_64')
+url="https://www.mesa3d.org/"
+msys2_repository_url="https://gitlab.freedesktop.org/mesa/mesa"
+msys2_references=(
+  "cpe: cpe:/a:mesa3d:mesa"
+)
+license=('spdx:MIT')
+depends=(#"clang-libs"
+         #"libsystre"
+         #"libva"
+         #"libwinpthread"
+         #"spirv-llvm-translator"
+         #"spirv-tools"
+         #"vulkan-loader"
+         "zlib"
+         "zstd"
+)
+makedepends=("gcc"
+             "meson"
+             "cmake"
+             "pkgconf"
+             #"directx-headers"
+             "python-mako"
+             "python-packaging"
+             "python-yaml"
+             "clang"
+             "llvm"
+             "glslang"
+             #"libclc"
+             #"libelf"
+             #"polly"
+)
+optdepends=("opengl-man-pages: for the OpenGL API man pages"
+            "vulkan-validation-layers: to debug applications using Vulkan graphics")
+source=(https://mesa.freedesktop.org/archive/${_realname}-${pkgver}.tar.xz{,.sig}
+        0000-addrlib-workaround-old-cpu-target.patch)
+sha256sums=('4afd26a3cc93c3dd27183d4c4845f1ca7d683f6343900b54995809b3271ebed6'
+            'SKIP'
+            '4e511b1ab380d0e7d1f152f89c82665e5ef7de96f26de1b5597aa1db85cfc5a4')
+validpgpkeys=('8703B6700E7EE06D7A39B8D6EDAE37B02CEB490D') # Emil Velikov <emil.l.velikov@gmail.com>
+validpgpkeys+=('946D09B5E4C9845E63075FF1D961C596A7203456') # Andres Gomez <tanty@igalia.com>
+validpgpkeys+=('E3E8F480C52ADD73B278EE78E1ECBE07D7D70895') # Juan Antonio Suárez Romero (Igalia, S.L.) <jasuarez@igalia.com>"
+validpgpkeys+=('A5CC9FEC93F2F837CB044912336909B6B25FADFA') # Juan A. Suarez Romero <jasuarez@igalia.com>
+validpgpkeys+=('71C4B75620BC75708B4BDB254C95FAAB3EB073EC') # Dylan Baker <dylan@pnwbakers.com>
+validpgpkeys+=('57551DE15B968F6341C248F68D8E31AFC32428A6') # Eric Engestrom <eric@engestrom.ch>
+noextract=(${_realname}-${pkgver}.tar.xz)
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying $_patch"
+    patch -Nbp1 -i "${srcdir}/$_patch"
+  done
+}
+
+del_file_exists() {
+  for _fname in "$@"
+  do
+    if [ -f $_fname ]; then
+      rm -rf $_fname
+    fi
+  done
+}
+# =========================================== #
+
+prepare() {
+  rm -rf "${srcdir}"/${_realname}-${pkgver}
+  tar -xJf "${srcdir}"/${_realname}-${pkgver}.tar.xz -C "${srcdir}" || true
+
+  cd "${srcdir}"/${_realname}-${pkgver}
+
+  apply_patch_with_msg \
+    0000-addrlib-workaround-old-cpu-target.patch
+
+  # Tie clang clc linking mode to static-libclc instead of shared-llvm
+  sed -e "s|_shared_llvm|false|g" \
+    -i src/compiler/clc/meson.build
+}
+
+build() {
+  local -a _meson_options=(
+  --prefix=${MSYSTEM_PREFIX}
+  --buildtype=release
+  --backend=ninja
+  -Degl=disabled
+  -Dgles1=disabled
+  -Dgles2=disabled
+  -Dbuild-tests=false
+  -Dvideo-codecs=all
+  -Dcpp_rtti=true
+  -Dmin-windows-version=8
+  -Dllvm=enabled
+  -Dshared-llvm=enabled
+  -Dgallium-drivers=softpipe,llvmpipe,zink,d3d12
+  -Dgallium-va=enabled
+  -Dmicrosoft-clc=enabled
+  -Dspirv-to-dxil=true
+  -Dstatic-libclc=all
+  )
+
+  if [[ ${CARCH} == x86_64 ]]; then
+    _meson_options+=(-Dvulkan-drivers=microsoft-experimental,swrast,gfxstream)
+  else
+    _meson_options+=(-Dvulkan-drivers=microsoft-experimental,swrast)
+  fi
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  PROCESSOR_ARCHITECTURE="${CARCH}" \
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+  -Dc_args="${CFLAGS}" \
+  -Dcpp_args="${CXXFLAGS}" \
+  "${_meson_options[@]}" \
+  "build-${MSYSTEM}" \
+  "${_realname}-${pkgver}"
+
+  ${MSYSTEM_PREFIX}/bin/meson compile -C "build-${MSYSTEM}"
+}
+
+package() {
+  ${MSYSTEM_PREFIX}/bin/meson install --skip-subprojects --destdir "${pkgdir}" \
+  -C "build-${MSYSTEM}"
+
+  install -d "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}
+  cp -r "${srcdir}"/${_realname}-${pkgver}/licenses/* \
+    "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}
+}
