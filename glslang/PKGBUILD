@@ -1,0 +1,90 @@
+# Contributor: J. Peter Mugaas <jpmugaas@suddenlink.net>
+# Contributor: wirx6 <wirx654@gmail.com>
+
+_realname=glslang
+pkgbase=${_realname}
+pkgname=("${_realname}")
+pkgver=15.3.0
+pkgrel=1
+pkgdesc='An OpenGL and OpenGL ES shader front end and validator'
+arch=('i686' 'x86_64')
+url='https://github.com/KhronosGroup/glslang'
+msys2_references=(
+  'archlinux: glslang'
+)
+license=('spdx:BSD-3-Clause')
+depends=('gcc-libs' 'spirv-tools')
+makedepends=('gcc'
+             'cmake'
+             'ninja'
+             'python')
+source=(https://github.com/KhronosGroup/glslang/archive/${pkgver}/${_realname}-${pkgver}.tar.gz
+        001-Add-strdup-function.patch
+        002-remove-deprecated-mingw-secure-api.patch
+        003-standalone-no-import.patch)
+sha256sums=('c6c21fe1873c37e639a6a9ac72d857ab63a5be6893a589f34e09a6c757174201'
+            'd0006606768b4fcbee42a3d136f3fa600c15b04362a24723b277df0490828cc2'
+            'c0a1b75449fa7ab6448b38b3d55bff1c150c2083894063cb95ad5b165bf79fe0'
+            '934933c5c6ae107b6b78ffe94167579ec26342ba0ef24680c8fa19ff41e9fa16')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  patch -Np1 -i "${srcdir}/001-Add-strdup-function.patch"
+  patch -Np1 -i "${srcdir}/002-remove-deprecated-mingw-secure-api.patch"
+  # Not quite sure if this is correct:
+  patch -Np1 -i "${srcdir}/003-standalone-no-import.patch"
+}
+
+build() {
+  declare -a extra_config
+  if check_option "debug" "n"; then
+    extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  echo "Building static library"
+  mkdir -p "${srcdir}"/build-${MSYSTEM_CARCH}-static && cd "${srcdir}"/build-${MSYSTEM_CARCH}-static
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+    -G "Ninja" \
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+    "${extra_config[@]}" \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DENABLE_GLSLANG_BINARIES=OFF \
+    -DGLSLANG_TESTS=OFF \
+    -DBUILD_EXTERNAL=OFF \
+    -DALLOW_EXTERNAL_SPIRV_TOOLS=ON \
+    ../${_realname}-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --build ./
+
+  echo "Building shared library"
+  mkdir -p "${srcdir}"/build-${MSYSTEM_CARCH}-shared && cd "${srcdir}"/build-${MSYSTEM_CARCH}-shared
+
+  MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+    -G "Ninja" \
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+    "${extra_config[@]}" \
+    -DBUILD_SHARED_LIBS=ON \
+    -DGLSLANG_TESTS=OFF \
+    -DBUILD_EXTERNAL=OFF \
+    -DALLOW_EXTERNAL_SPIRV_TOOLS=ON \
+    -DPython3_EXECUTABLE=${MSYSTEM_PREFIX}/bin/python \
+    ../${_realname}-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --build ./
+}
+
+package() {
+  cd "${srcdir}"/build-${MSYSTEM_CARCH}-static
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install .
+
+  cd "${srcdir}"/build-${MSYSTEM_CARCH}-shared
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install .
+
+  install -Dm644 "${srcdir}/${_realname}-${pkgver}/LICENSE.txt" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE.txt"
+}
