@@ -1,0 +1,31 @@
+From bedc59a4f984d31a62b4aaccecd5cf46c2cf7be9 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 9 Aug 2026 13:57:28 -0400
+Subject: Replace "_strdup" with "strdup"
+
+---
+ va/win32/va_win32.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/va/win32/va_win32.c b/va/win32/va_win32.c
+index 350ee3a..eda9bc8 100644
+--- a/va/win32/va_win32.c
++++ b/va/win32/va_win32.c
+@@ -143,12 +143,12 @@ static VAStatus va_DisplayContextGetDriverNames(
+ 
+     /* Always prefer the adapter registered driver name as first option */
+     if (adapter && pWin32Ctx->registry_driver_available_flag) {
+-        drivers[count] = _strdup(pWin32Ctx->registry_driver_name);
++        drivers[count] = strdup(pWin32Ctx->registry_driver_name);
+         count++;
+     }
+     /* Provide the default driver name as a fallback option */
+     if (*num_drivers > count) {
+-        drivers[count] = _strdup(VAAPI_DEFAULT_DRIVER_NAME);
++        drivers[count] = strdup(VAAPI_DEFAULT_DRIVER_NAME);
+         count++;
+     }
+ 
+-- 
+2.53.0.windows.2
+

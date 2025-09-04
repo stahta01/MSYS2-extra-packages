@@ -1,0 +1,24 @@
+From a51c1b1908601565b05cc32c5b3d48458a3c0e0c Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 9 Aug 2026 13:58:03 -0400
+Subject: Add __MSYS__ guard
+
+---
+ va/va_compat.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/va/va_compat.c b/va/va_compat.c
+index 44d6956..8c6f4b2 100644
+--- a/va/va_compat.c
++++ b/va/va_compat.c
+@@ -40,6 +40,6 @@ vaCreateSurfaces_0_32_0(
+     return vaCreateSurfaces(dpy, format, width, height, surfaces, num_surfaces,
+                             NULL, 0);
+ }
+-#if !defined(_WIN32)
++#if !defined(_WIN32) && !defined(__MSYS__)
+ VA_CPP_HELPER_ALIAS(vaCreateSurfaces, 0, 32, 0);
+ #endif
+-- 
+2.53.0.windows.2
+

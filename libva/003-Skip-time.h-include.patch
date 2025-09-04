@@ -1,0 +1,25 @@
+From 257a5e3b0aac6051fa09742dc0cd6785ead7f360 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 9 Aug 2026 14:02:50 -0400
+Subject: Skip time.h include
+
+---
+ va/compat_win32.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/va/compat_win32.h b/va/compat_win32.h
+index 4ddf503..a341342 100644
+--- a/va/compat_win32.h
++++ b/va/compat_win32.h
+@@ -27,7 +27,7 @@
+ #include <windows.h>
+ #include <winsock.h>
+ #include <io.h>
+-#include <time.h>
++//#include <time.h>
+ 
+ // Include stdlib.h here to make sure we
+ // always replace MSVC getenv definition
+-- 
+2.53.0.windows.2
+
