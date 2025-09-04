@@ -15,25 +15,25 @@ msys2_references=(
 license=('spdx:MIT')
 depends=(#"clang-libs"
          #"libsystre"
-         #"libva"
+         'libva'
          #"libwinpthread"
          #"spirv-llvm-translator"
          #"spirv-tools"
          #"vulkan-loader"
-         "zlib"
-         "zstd"
+         'zlib'
+         'zstd'
 )
-makedepends=("gcc"
-             "meson"
-             "cmake"
-             "pkgconf"
+makedepends=('gcc'
+             'meson'
+             'cmake'
+             'pkgconf'
              #"directx-headers"
-             "python-mako"
-             "python-packaging"
-             "python-yaml"
-             "clang"
-             "llvm"
-             "glslang"
+             'python-mako'
+             'python-packaging'
+             'python-yaml'
+             'clang'
+             'llvm'
+             'glslang'
              #"libclc"
              #"libelf"
              #"polly"
