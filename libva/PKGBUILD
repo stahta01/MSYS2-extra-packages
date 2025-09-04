@@ -1,0 +1,72 @@
+# Maintainer: Biswapriyo Nath <nathbappai@gmail.com>
+
+_realname=libva
+pkgbase=${_realname}
+pkgname=("${_realname}")
+pkgver=2.22.0
+pkgrel=2
+pkgdesc='Video Acceleration (VA) API'
+arch=('i686' 'x86_64')
+url='https://intel.github.io/libva/'
+msys2_repository_url='https://github.com/intel/libva'
+msys2_references=(
+  'purl: pkg:github/intel/libva'
+)
+license=('spdx:MIT')
+makedepends=('meson'
+             'ninja'
+             'gcc')
+source=("https://github.com/intel/libva/archive/${pkgver}/${_realname}-${pkgver}.tar.gz"
+        '001-Replace-_strdup-with-strdup.patch'
+        '002-Add-__MSYS__-guard.patch'
+        '003-Skip-time.h-include.patch')
+sha256sums=('467c418c2640a178c6baad5be2e00d569842123763b80507721ab87eb7af8735'
+            '5fb1fa8a8ac6cd5a8dc782c5ff2bab25bad4ecb2846abc100da5dc4046a48aa4'
+            'f23c90c243416de8e051ef7f093508b15a1dff2d79f800855436820bafd1d824'
+            '7b54dae767f8fa635605e07a7840dd4cc694796b9c667bbeef1846412ffa9dd6')
+
+prepare() {
+  cd "${srcdir}"/${_realname}-${pkgver}
+
+  patch -Np1 -i "${srcdir}"/001-Replace-_strdup-with-strdup.patch
+  patch -Np1 -i "${srcdir}"/002-Add-__MSYS__-guard.patch
+  patch -Np1 -i "${srcdir}"/003-Skip-time.h-include.patch
+
+  sed -i "s|WITH_DRM = not get_option('disable_drm') and (host_machine.system() != 'windows')|WITH_DRM = false|" meson.build
+  sed -i "s|libdrm_dep = dependency|#libdrm_dep = dependency|" meson.build
+  sed -i "s|WITH_WIN32 = (host_machine.system() == 'windows')|WITH_WIN32 = true|" meson.build
+}
+
+build() {
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    meson setup \
+      --prefix="${MSYSTEM_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --buildtype=plain \
+      --default-library=static \
+      "build-${MSYSTEM}-static" \
+      "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM}-static"
+
+  MSYS2_ARG_CONV_EXCL="--prefix=" \
+    meson setup \
+      --prefix="${MSYSTEM_PREFIX}" \
+      --wrap-mode=nodownload \
+      --auto-features=enabled \
+      --buildtype=plain \
+      --default-library=shared \
+      "build-${MSYSTEM}-shared" \
+      "${_realname}-${pkgver}"
+
+  meson compile -C "build-${MSYSTEM}-shared"
+}
+
+package() {
+  meson install -C "build-${MSYSTEM}-static" --destdir "${pkgdir}"
+  meson install -C "build-${MSYSTEM}-shared" --destdir "${pkgdir}"
+
+  install -Dm644 "${srcdir}"/${_realname}-${pkgver}/COPYING \
+    "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING
+}
