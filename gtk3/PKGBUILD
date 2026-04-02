@@ -4,7 +4,7 @@ _realname=gtk3
 pkgbase=${_realname}
 pkgname=("${_realname}" "gtk-update-icon-cache")
 pkgver=3.24.49
-pkgrel=1
+pkgrel=2
 pkgdesc="GObject-based multi-platform GUI toolkit (v3)"
 arch=('i686' 'x86_64')
 url="https://www.gtk.org/"
@@ -91,7 +91,7 @@ build() {
   CFLAGS+=" -Wno-deprecated-declarations"
 
   MSYS2_ARG_CONV_EXCL="--prefix=" \
-  ${MSYSTEM_PREFIX}/bin/meson setup \
+  ${MSYSTEM_PREFIX}/bin/meson setup --wipe \
     --prefix="${MSYSTEM_PREFIX}" \
     --wrap-mode=nodownload \
     --default-library=both \
@@ -103,10 +103,16 @@ build() {
     -Dwin32_backend=true \
     -Dintrospection=false \
     -Dxinerama=no \
-    -Dtests=false \
+    -Dtests=true \
     "../gtk-${pkgver}"
 
   ${MSYSTEM_PREFIX}/bin/meson compile
+}
+
+check() {
+  cd "${srcdir}"/build-${MSYSTEM_CARCH}
+
+  ${MSYSTEM_PREFIX}/bin/meson test || true
 }
 
 package_gtk3() {
