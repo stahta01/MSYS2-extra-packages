@@ -8,7 +8,7 @@ _enable_gir=no
 
 _realname=glib2
 pkgbase=${_realname}
-pkgname="${_realname}-win32"
+pkgname="${_realname}-mingw"
 pkgver=2.88.0
 pkgrel=1
 url="https://gitlab.gnome.org/GNOME/glib"
