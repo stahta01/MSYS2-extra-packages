@@ -91,6 +91,8 @@ build() {
     _extra_config+=("-Dman=true")
   fi
 
+  sed -i 's/os_win32  = false/os_win32  = true/' ../gtk-${pkgver}/meson.build
+
   CFLAGS+=" -DG_ENABLE_DEBUG"  # so the GTK_DEBUG env var works
   CFLAGS+=" -Wno-deprecated-declarations"
 
