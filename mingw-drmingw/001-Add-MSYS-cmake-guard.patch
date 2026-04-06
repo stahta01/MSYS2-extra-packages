@@ -1,0 +1,25 @@
+From 3de6d9722c2988a0d79e871e8cc834b493cab9e7 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 12 Apr 2026 12:51:18 -0400
+Subject: Add MSYS cmake guard
+
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8e13568..1ef42ba 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -16,7 +16,7 @@ option (ENABLE_COVERAGE "Enable code coverage." OFF)
+ ##############################################################################
+ # Dependencies
+ 
+-if (NOT MINGW OR CYGWIN)
++if (NOT MINGW AND NOT MSYS)
+     message (FATAL_ERROR "MinGW toolchain required")
+ endif ()
+ 
+-- 
+2.53.0.windows.2
+
