@@ -1,0 +1,39 @@
+From c6d3eccf3e1ad7dfafbbc1ab26f99ee557796865 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 30 Mar 2026 17:50:02 -0400
+Subject: Change cmake wx setup definitions
+
+---
+ build/cmake/setup.cmake | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/build/cmake/setup.cmake b/build/cmake/setup.cmake
+index 5b7d75e05f..8b1fa63494 100644
+--- a/build/cmake/setup.cmake
++++ b/build/cmake/setup.cmake
+@@ -34,15 +34,19 @@ endmacro()
+ string(TOUPPER ${CMAKE_SYSTEM_NAME} wxSYS_NAME)
+ wx_setup_definition(__${wxSYS_NAME}__)
+ 
+-if(WIN32)
++if(WIN32 OR WXMSW)
+     wx_setup_definition(__WIN32__)
+ endif()
+ 
+-if(CYGWIN)
++if(CYGWIN OR MSYS)
+     wx_setup_definition(__GNUWIN32__)
+ endif()
+ 
+-if(UNIX)
++if(MSYS AND WXMSW)
++    wx_setup_definition(__WINDOWS__)
++endif()
++
++if(UNIX AND NOT WXMSW)
+     wx_setup_definition(wxUSE_UNIX)
+     wx_setup_definition(__UNIX__)
+     list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
+-- 
+2.53.0.windows.2
+
