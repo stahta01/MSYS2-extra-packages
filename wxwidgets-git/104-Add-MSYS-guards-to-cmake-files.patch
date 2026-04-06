@@ -1,0 +1,39 @@
+From 9dfd75b60d24f32c71a02f9c082a473f5e2d17a2 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sat, 4 Apr 2026 20:48:21 -0400
+Subject: Add MSYS guards to cmake files
+
+---
+ build/cmake/functions.cmake | 2 +-
+ build/cmake/main.cmake      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/build/cmake/functions.cmake b/build/cmake/functions.cmake
+index dcebdc2cf9..10bfcd63f7 100644
+--- a/build/cmake/functions.cmake
++++ b/build/cmake/functions.cmake
+@@ -357,7 +357,7 @@ function(wx_set_target_properties target_name)
+         target_compile_definitions(${target_name} PRIVATE "WXDLLNAME=${wxDLLNAME}")
+     endif()
+ 
+-    if(CYGWIN)
++    if(CYGWIN OR MSYS)
+         target_link_libraries(${target_name} PUBLIC -L/usr/lib/w32api)
+     endif()
+ 
+diff --git a/build/cmake/main.cmake b/build/cmake/main.cmake
+index 2bc9c586b1..e275bd92ec 100644
+--- a/build/cmake/main.cmake
++++ b/build/cmake/main.cmake
+@@ -57,7 +57,7 @@ include(build/cmake/install.cmake)
+ 
+ # Determine minimum required OS at runtime
+ set(wxREQUIRED_OS_DESC "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
+-if(MSVC OR MINGW OR CYGWIN)
++if(MSVC OR MINGW OR CYGWIN OR MSYS)
+     set(wxREQUIRED_OS_DESC "Windows 7 / Windows Server 2008")
+     if(wxPLATFORM_ARCH)
+         wx_string_append(wxREQUIRED_OS_DESC " (${wxPLATFORM_ARCH} Edition)")
+-- 
+2.53.0.windows.2
+
