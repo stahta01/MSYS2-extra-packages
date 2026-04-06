@@ -1,0 +1,35 @@
+From 9e7d224a7ad944b7ebfe090795aab5cf4cb4fece Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 13 Apr 2026 07:35:30 -0400
+Subject: Comment out catchsegv POST_BUILD
+
+---
+ src/catchsegv/CMakeLists.txt | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/catchsegv/CMakeLists.txt b/src/catchsegv/CMakeLists.txt
+index 1f04c3d..2a031ad 100644
+--- a/src/catchsegv/CMakeLists.txt
++++ b/src/catchsegv/CMakeLists.txt
+@@ -18,12 +18,12 @@ target_link_libraries (catchsegv
+ )
+ 
+ 
+-add_custom_command (
+-    TARGET catchsegv
+-    POST_BUILD
+-    COMMAND ${CMAKE_COMMAND} -DCMAKE_OBJDUMP=${CMAKE_OBJDUMP} -DTARGET=$<TARGET_FILE:catchsegv> -P ${CMAKE_SOURCE_DIR}/cmake/CheckDependencies.cmake
+-    VERBATIM
+-)
++#add_custom_command (
++    #TARGET catchsegv
++    #POST_BUILD
++    #COMMAND ${CMAKE_COMMAND} -DCMAKE_OBJDUMP=${CMAKE_OBJDUMP} -DTARGET=$<TARGET_FILE:catchsegv> -P ${CMAKE_SOURCE_DIR}/cmake/CheckDependencies.cmake
++    #VERBATIM
++#)
+ 
+ 
+ install (TARGETS catchsegv RUNTIME DESTINATION bin)
+-- 
+2.53.0.windows.2
+
