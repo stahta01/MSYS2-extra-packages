@@ -1,0 +1,25 @@
+From 449f16c4d9a415fab3a069a27af93f92cf4c71c1 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sat, 11 Apr 2026 00:43:58 -0400
+Subject: warning reduction in common/sckaddr.cpp
+
+---
+ src/common/sckaddr.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/common/sckaddr.cpp b/src/common/sckaddr.cpp
+index 8574a26a55..f0edc935e8 100644
+--- a/src/common/sckaddr.cpp
++++ b/src/common/sckaddr.cpp
+@@ -74,7 +74,7 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxUNIXaddress, wxSockAddress);
+ //       and to use the same code for IPv4 and IPv6 support
+ 
+ #ifdef __WINDOWS__
+-    #define HAVE_INET_ADDR
++    #define HAVE_INET_ADDR 1
+ 
+     // under MSW getxxxbyname() functions are MT-safe (but not reentrant) so
+     // we don't need to serialize calls to them
+-- 
+2.53.0.windows.2
+

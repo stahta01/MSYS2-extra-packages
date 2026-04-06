@@ -1,0 +1,231 @@
+From d050fc23c928e531eda5c94058b9c7ae81d8c230 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 13 Apr 2026 18:36:32 -0400
+Subject: Add WXMSW guards to cmake files
+
+---
+ build/cmake/functions.cmake         | 16 ++++++++--------
+ build/cmake/init.cmake              |  2 +-
+ build/cmake/lib/base/CMakeLists.txt |  2 +-
+ build/cmake/lib/core/CMakeLists.txt |  2 +-
+ build/cmake/lib/net/CMakeLists.txt  |  4 ++--
+ build/cmake/options.cmake           |  8 ++++----
+ build/cmake/setup.cmake             |  8 ++++----
+ 7 files changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/build/cmake/functions.cmake b/build/cmake/functions.cmake
+index ac56db4c45..53722f9519 100644
+--- a/build/cmake/functions.cmake
++++ b/build/cmake/functions.cmake
+@@ -189,7 +189,7 @@ function(wx_set_common_target_properties target_name)
+         set_target_properties(${target_name} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+     endif()
+ 
+-    if(NOT WIN32 AND wxUSE_VISIBILITY)
++    if(NOT WIN32 AND NOT WXMSW AND wxUSE_VISIBILITY)
+         set_target_properties(${target_name} PROPERTIES
+             C_VISIBILITY_PRESET hidden
+             CXX_VISIBILITY_PRESET hidden
+@@ -366,7 +366,7 @@ function(wx_set_target_properties target_name)
+     endif()
+ 
+     # shared library names
+-    if(WIN32)
++    if(WIN32 OR WXMSW)
+         # msvc/makefile/configure use the same format on Windows
+         set(wxRUNTIME_OUTPUT_NAME       "wx${lib_toolkit}${dll_version}${lib_unicode}${lib_rls}${dll_suffix}")
+         set(wxRUNTIME_OUTPUT_NAME_DEBUG "wx${lib_toolkit}${dll_version}${lib_unicode}${lib_dbg}${dll_suffix}")
+@@ -421,7 +421,7 @@ function(wx_set_target_properties target_name)
+             )
+     endif()
+ 
+-    if(WIN32)
++    if(WIN32 OR WXMSW)
+         # not needed for wxWidgets anymore (it is always built with unicode)
+         # but keep it here so IDEs like Visual Studio know what character set is used
+         target_compile_definitions(${target_name} PRIVATE UNICODE _UNICODE)
+@@ -438,7 +438,7 @@ function(wx_set_target_properties target_name)
+             $<INSTALL_INTERFACE:${wxINSTALL_INCLUDE_DIR}>
+         )
+ 
+-    if (WIN32)
++    if (WIN32 OR WXMSW)
+         set(WIN32_LIBRARIES
+             kernel32
+             user32
+@@ -545,7 +545,7 @@ macro(wx_add_library name)
+ 
+         if(wxBUILD_SHARED)
+             set(wxBUILD_LIB_TYPE SHARED)
+-            if(WIN32)
++            if(WIN32 OR WXMSW)
+                 # Add WIN32 version information
+                 list(APPEND src_files "${wxSOURCE_DIR}/src/msw/version.rc" "${wxSOURCE_DIR}/include/wx/msw/genrcdefs.h")
+             endif()
+@@ -741,7 +741,7 @@ function(wx_set_builtin_target_properties target_name)
+         )
+     endif()
+ 
+-    if(WIN32)
++    if(WIN32 OR WXMSW)
+         target_compile_definitions(${target_name} PRIVATE UNICODE _UNICODE)
+     endif()
+ 
+@@ -811,7 +811,7 @@ function(wx_add_thirdparty_library var_name lib_name help_str)
+     elseif(UNIX AND NOT APPLE)
+         # Try sys libraries for MSYS and CYGWIN
+         set(thirdparty_lib_default sys)
+-    elseif(WIN32 OR APPLE)
++    elseif(WIN32 OR WXMSW OR APPLE)
+         # On Windows or apple platforms prefer using the builtin libraries
+         set(thirdparty_lib_default builtin)
+     else()
+@@ -969,7 +969,7 @@ function(wx_add name group)
+         set(src_files ${wxSOURCE_DIR}/${SUB_DIR}/${name}.cpp)
+     endif()
+ 
+-    if(WIN32)
++    if(WIN32 OR WXMSW)
+         if(APP_RES)
+             foreach(res ${APP_RES})
+                 list(APPEND src_files ${wxSOURCE_DIR}/${SUB_DIR}/${res})
+diff --git a/build/cmake/init.cmake b/build/cmake/init.cmake
+index a0fda0f721..55b89ba652 100644
+--- a/build/cmake/init.cmake
++++ b/build/cmake/init.cmake
+@@ -181,7 +181,7 @@ set(wxARCH_SUFFIX)
+ set(wxCOMPILER_PREFIX)
+ set(wxPLATFORM_LIB_DIR)
+ 
+-if(WIN32)
++if(WIN32 OR WXMSW)
+     # TODO: include compiler version in wxCOMPILER_PREFIX for official builds
+     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+         set(wxCOMPILER_PREFIX "vc")
+diff --git a/build/cmake/lib/base/CMakeLists.txt b/build/cmake/lib/base/CMakeLists.txt
+index 476642c1ca..8cd210ec58 100644
+--- a/build/cmake/lib/base/CMakeLists.txt
++++ b/build/cmake/lib/base/CMakeLists.txt
+@@ -10,7 +10,7 @@
+ wx_append_sources(BASE_FILES BASE_CMN)
+ wx_append_sources(BASE_FILES BASE_AND_GUI_CMN)
+ 
+-if(WIN32)
++if(WIN32 OR WXMSW)
+     wx_append_sources(BASE_FILES BASE_WIN32)
+     wx_append_sources(BASE_FILES BASE_AND_GUI_WIN32)
+ elseif(APPLE)
+diff --git a/build/cmake/lib/core/CMakeLists.txt b/build/cmake/lib/core/CMakeLists.txt
+index 68f139b4d2..cd39c149e8 100644
+--- a/build/cmake/lib/core/CMakeLists.txt
++++ b/build/cmake/lib/core/CMakeLists.txt
+@@ -9,7 +9,7 @@
+ 
+ wx_append_sources(CORE_SRC GUI_CMN)
+ wx_append_sources(CORE_SRC BASE_AND_GUI_CMN)
+-if(WIN32)
++if(WIN32 OR WXMSW)
+     wx_append_sources(CORE_SRC BASE_AND_GUI_WIN32)
+ elseif(UNIX)
+     wx_append_sources(CORE_SRC UNIX)
+diff --git a/build/cmake/lib/net/CMakeLists.txt b/build/cmake/lib/net/CMakeLists.txt
+index d24e83570c..1050f3b970 100644
+--- a/build/cmake/lib/net/CMakeLists.txt
++++ b/build/cmake/lib/net/CMakeLists.txt
+@@ -9,13 +9,13 @@
+ 
+ wx_append_sources(NET_FILES NET_CMN)
+ 
+-if(WIN32)
++if(WIN32 OR WXMSW)
+     wx_append_sources(NET_FILES NET_WIN32)
+ elseif(APPLE)
+     wx_append_sources(NET_FILES NET_OSX)
+ endif()
+ 
+-if(UNIX AND NOT WIN32)
++if(UNIX AND NOT WIN32 AND NOT WXMSW)
+     wx_append_sources(NET_FILES NET_UNIX)
+ endif()
+ 
+diff --git a/build/cmake/options.cmake b/build/cmake/options.cmake
+index 50e9e30a77..15ee76ae9e 100644
+--- a/build/cmake/options.cmake
++++ b/build/cmake/options.cmake
+@@ -179,7 +179,7 @@ wx_option(wxUSE_CONFIG "use wxConfig (and derived) classes")
+ 
+ wx_option(wxUSE_SOCKETS "use socket/network classes")
+ wx_option(wxUSE_IPV6 "enable IPv6 support in wxSocket")
+-if(WIN32)
++if(WIN32 OR WXMSW)
+     wx_option(wxUSE_OLE "use OLE classes")
+ endif()
+ wx_option(wxUSE_DATAOBJ "use data object classes")
+@@ -267,7 +267,7 @@ wx_option(wxUSE_THREADS "use threads")
+ 
+ wx_option(wxUSE_XML "use the XML library")
+ 
+-if(WIN32)
++if(WIN32 OR WXMSW)
+     wx_option(wxUSE_DBGHELP "use dbghelp.dll API")
+     wx_option(wxUSE_INICONF "use wxIniConfig")
+     wx_option(wxUSE_WINSOCK2 "include <winsock2.h> rather than <winsock.h>" OFF)
+@@ -311,7 +311,7 @@ if(APPLE)
+     set(wxUSE_GRAPHICS_CONTEXT ON)
+ else()
+     wx_option(wxUSE_GRAPHICS_CONTEXT "use graphics context 2D drawing API")
+-    if(WIN32)
++    if(WIN32 OR WXMSW)
+         wx_option(wxUSE_GRAPHICS_DIRECT2D "enable Direct2D graphics context")
+     endif()
+ endif()
+@@ -496,7 +496,7 @@ wx_option(wxUSE_ICO_CUR "use Windows ICO and CUR formats")
+ # wxMSW-only options
+ # ---------------------------------------------------------------------------
+ 
+-if(WIN32)
++if(WIN32 OR WXMSW)
+     if(MSVC)
+         set(wxUSE_WINRT_DEFAULT ON)
+     else()
+diff --git a/build/cmake/setup.cmake b/build/cmake/setup.cmake
+index 5f0755c571..cf206238f6 100644
+--- a/build/cmake/setup.cmake
++++ b/build/cmake/setup.cmake
+@@ -87,7 +87,7 @@ endif()
+ 
+ set(wxINSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
+ 
+-if(NOT WIN32 AND wxUSE_VISIBILITY)
++if(NOT WIN32 AND NOT WXMSW AND wxUSE_VISIBILITY)
+     check_cxx_compiler_flag(-fvisibility=hidden HAVE_VISIBILITY)
+ else()
+     set(HAVE_VISIBILITY 0)
+@@ -263,7 +263,7 @@ endmacro()
+ endif()
+ 
+ # the following tests are for Unix(like) systems only
+-if(UNIX)
++if(UNIX AND NOT WXMSW)
+     if(wxUSE_LIBICONV)
+         set(HAVE_ICONV ON)
+         set(ICONV_CONST " ")
+@@ -484,7 +484,7 @@ if(UNIX)
+             wx_option_force_value(wxUSE_JOYSTICK OFF)
+         endif()
+     endif()
+-endif(UNIX)
++endif(UNIX AND NOT WXMSW)
+ 
+ if(CMAKE_USE_PTHREADS_INIT)
+     wx_check_symbols_exist_if_not_linux(
+@@ -719,7 +719,7 @@ if(APPLE)
+     set(wxUSE_EPOLL_DISPATCHER OFF)
+     set(wxUSE_SELECT_DISPATCHER ON)
+ else()
+-    if(NOT WIN32)
++    if(NOT WIN32 AND NOT WXMSW)
+         set(wxUSE_SELECT_DISPATCHER ON)
+         wx_check_include_file_if_not_linux(sys/epoll.h wxUSE_EPOLL_DISPATCHER)
+     endif()
+-- 

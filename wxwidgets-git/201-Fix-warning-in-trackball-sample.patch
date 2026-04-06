@@ -1,0 +1,23 @@
+From 53faad79d567aae7a04c91519e7e097801ce1d65 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Wed, 26 Mar 2025 12:56:36 -0400
+Subject: Fix warning in trackball sample
+
+---
+ samples/opengl/penguin/trackball.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/samples/opengl/penguin/trackball.h b/samples/opengl/penguin/trackball.h
+index cf9b5fc32d..10d9655f52 100644
+--- a/samples/opengl/penguin/trackball.h
++++ b/samples/opengl/penguin/trackball.h
+@@ -59,7 +59,7 @@ trackball(float q[4], float p1x, float p1y, float p2x, float p2y);
+  * over-written with the resulting new total rotation).
+  */
+ void
+-add_quats(float *q1, float *q2, float *dest);
++add_quats(float q1[4], float q2[4], float dest[4]);
+ 
+ /*
+  * A useful function, builds a rotation matrix in Matrix based on
+-- 

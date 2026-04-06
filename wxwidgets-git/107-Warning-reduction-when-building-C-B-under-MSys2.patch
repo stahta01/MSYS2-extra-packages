@@ -1,0 +1,25 @@
+From ac876376e0a503a6f3d4af940708028b2e46d8b1 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 12 Apr 2026 00:47:31 -0400
+Subject: Warning reduction when building C::B under MSys2
+
+---
+ include/wx/defs.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/wx/defs.h b/include/wx/defs.h
+index 077f2cc40d..2f3c9991c8 100644
+--- a/include/wx/defs.h
++++ b/include/wx/defs.h
+@@ -168,7 +168,7 @@
+ /* Prevents conflicts between sys/types.h and winsock.h with Cygwin, */
+ /* when using Windows sockets. */
+ #if defined(__CYGWIN__) && defined(__WINDOWS__)
+-#define __USE_W32_SOCKETS
++#define __USE_W32_SOCKETS 1
+ #endif
+ 
+ /*  ---------------------------------------------------------------------------- */
+-- 
+2.53.0.windows.2
+

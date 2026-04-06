@@ -1,0 +1,34 @@
+From 05dd98fcaf29122bed0437f5e95ce96444f08caf Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Tue, 31 Mar 2026 17:29:38 -0400
+Subject: Use lib_prefix of "msys-" for MSYS2
+
+---
+ build/cmake/functions.cmake | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/build/cmake/functions.cmake b/build/cmake/functions.cmake
+index 55bfd7ac14..dcebdc2cf9 100644
+--- a/build/cmake/functions.cmake
++++ b/build/cmake/functions.cmake
+@@ -310,6 +310,8 @@ function(wx_set_target_properties target_name)
+     set(lib_prefix "lib")
+     if(WIN32_MSVC_NAMING OR (WIN32 AND wxBUILD_SHARED))
+         set(lib_prefix)
++    elseif (MSYS AND wxBUILD_SHARED)
++        set(lib_prefix "msys-")
+     elseif (CYGWIN AND wxBUILD_SHARED)
+         set(lib_prefix "cyg")
+     endif()
+@@ -672,6 +674,8 @@ macro(wx_set_builtin_target_ouput_name target target_name)
+     set(lib_prefix "lib")
+     if(WIN32_MSVC_NAMING OR (WIN32 AND wxBUILD_SHARED))
+         set(lib_prefix)
++    elseif (MSYS AND wxBUILD_SHARED)
++        set(lib_prefix "msys-")
+     elseif (CYGWIN AND wxBUILD_SHARED)
+         set(lib_prefix "cyg")
+     endif()
+-- 
+2.53.0.windows.2
+
