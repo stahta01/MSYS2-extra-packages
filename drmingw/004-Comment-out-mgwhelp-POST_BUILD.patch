@@ -1,0 +1,35 @@
+From c0711b674ff1e4afb726b8d13d196e057f90c331 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 13 Apr 2026 07:29:38 -0400
+Subject: Comment out mgwhelp POST_BUILD
+
+---
+ src/mgwhelp/CMakeLists.txt | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/mgwhelp/CMakeLists.txt b/src/mgwhelp/CMakeLists.txt
+index c7541aa..a7e7d38 100644
+--- a/src/mgwhelp/CMakeLists.txt
++++ b/src/mgwhelp/CMakeLists.txt
+@@ -37,12 +37,12 @@ set_target_properties (mgwhelp PROPERTIES
+ )
+ 
+ 
+-add_custom_command (
+-    TARGET mgwhelp
+-    POST_BUILD
+-    COMMAND ${CMAKE_COMMAND} -DCMAKE_OBJDUMP=${CMAKE_OBJDUMP} -DTARGET=$<TARGET_FILE:mgwhelp> -P ${CMAKE_SOURCE_DIR}/cmake/CheckDependencies.cmake
+-    VERBATIM
+-)
++#add_custom_command (
++    #TARGET mgwhelp
++    #POST_BUILD
++    #COMMAND ${CMAKE_COMMAND} -DCMAKE_OBJDUMP=${CMAKE_OBJDUMP} -DTARGET=$<TARGET_FILE:mgwhelp> -P ${CMAKE_SOURCE_DIR}/cmake/CheckDependencies.cmake
++    #VERBATIM
++#)
+ 
+ 
+ install (TARGETS mgwhelp LIBRARY DESTINATION bin)
+-- 
+2.53.0.windows.2
+
