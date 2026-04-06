@@ -1,0 +1,99 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Ray Donnelly <mingw.android@gmail.com>
+# Contributor: Renato Silva <br.renatosilva@gmail.com>
+# Contributor: Peter Budai <peterbudai@hotmail.com>
+
+_realname=hunspell
+pkgbase=${_realname}
+pkgname="${_realname}"
+# Please rebuild enchant when updating this if needed, otherwise it may
+# silently break spell checking in applications
+pkgver=1.7.2
+pkgrel=4
+pkgdesc="Spell checker and morphological analyzer library and program"
+arch=('i686' 'x86_64')
+url="https://hunspell.github.io/"
+msys2_repository_url="https://github.com/hunspell/hunspell"
+msys2_references=(
+  "cpe: cpe:/a:hunspell_project:hunspell"
+)
+license=(spdx:MPL-1.1 OR LGPL-2.1-or-later OR GPL-2.0-or-later)
+makedepends=("gcc" 
+             "autotools"
+             "gettext-devel"
+             'libreadline-devel')
+depends=(gcc-libs
+         gettext
+         ncurses
+         libreadline)
+optdepends=("perl: for ispellaff2myspell")
+source=("https://github.com/hunspell/hunspell/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz"
+        pathtools.c
+        pathtools.h
+        01-relocate.patch
+        02-fix-link-with-pdcurses.patch)
+noextract=("${_realname}-${pkgver}.tar.gz")
+sha256sums=('69fa312d3586c988789266eaf7ffc9861d9f6396c31fc930a014d551b59bbd6e'
+            '8de425ee58f19ebf47fd33b2b7c96c30277ec2373eeb09f8d08b5f8d805101c8'
+            '1585ef1b61cf53a2ca27049c11d49e0834683dfda798f03547761375df482a90'
+            '628ac7f44ae0e093f229e88316cc8fbfb027cdcbe2bc5cc28d75bc3c57413f7a'
+            '260432a8f01525e83124c79e375cc9f0692b1a6c97773add4c69b8efe081cf1d')
+
+prepare() {
+  cd "${srcdir}"
+  tar zxf ${_realname}-${pkgver}.tar.gz || true
+
+  #test ! -d "${startdir}/../mingw-w64-pathtools" || {
+    #cmp "${startdir}/../mingw-w64-pathtools/pathtools.c" "${srcdir}/pathtools.c" &&
+    #cmp "${startdir}/../mingw-w64-pathtools/pathtools.h" "${srcdir}/pathtools.h"
+  #} || exit 1
+
+  cd "${srcdir}/${_realname}-${pkgver}"
+  cp -fHv "${srcdir}"/pathtools.c src/tools/pathtools.cxx
+  cp -fHv "${srcdir}"/pathtools.h src/tools/
+
+  cp -Rp README.md README
+  patch -Np1 -i "${srcdir}"/01-relocate.patch
+  #patch -Np1 -i "${srcdir}"/02-fix-link-with-pdcurses.patch
+  autoreconf -fi
+}
+
+build() {
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}" && cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  #CPPFLAGS+=" -I${MSYSTEM_PREFIX}/include/ncurses"
+  #CFLAGS+=" -I${MSYSTEM_PREFIX}/include/ncurses"
+  #CXXFLAGS+=" -I${MSYSTEM_PREFIX}/include/ncurses"
+
+  #--disable-rpath \
+
+  ../${_realname}-${pkgver}/configure \
+    --build=${MSYSTEM_CHOST} \
+    --host=${MSYSTEM_CHOST} \
+    --target=${MSYSTEM_CHOST} \
+    --prefix=${MSYSTEM_PREFIX} \
+    --with-ui \
+    --with-readline
+
+  #MSYS2_ARG_CONV_EXCL="-DBINDIR=;-DDATA_DIR=" \
+  make
+}
+
+check() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+  make check
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+  #MSYS2_ARG_CONV_EXCL="-DBINDIR=;-DDATA_DIR=" \
+  make DESTDIR="${pkgdir}" install
+  cp "${pkgdir}"${MSYSTEM_PREFIX}/lib/lib${_realname}-${pkgver%.*}.dll.a "${pkgdir}"${MSYSTEM_PREFIX}/lib/lib${_realname}.dll.a
+
+  # Licenses
+  cd "${srcdir}/${_realname}-${pkgver}"
+  install -Dm644 COPYING        "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING"
+  install -Dm644 COPYING.LESSER "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING.LESSER"
+  install -Dm644 COPYING.MPL    "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}/COPYING.MPL"
+
+}
