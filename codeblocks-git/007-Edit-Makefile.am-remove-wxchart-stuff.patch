@@ -1,0 +1,64 @@
+From 924e745e9f3ae6fc537daa9ab5bf3365402e3a30 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sat, 11 Apr 2026 18:50:22 -0400
+Subject: Edit Makefile.am remove wxchart stuff
+
+---
+ src/plugins/contrib/wxContribItems/Makefile.am      | 4 ++--
+ src/plugins/contrib/wxSmithContribItems/Makefile.am | 6 +-----
+ 2 files changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/src/plugins/contrib/wxContribItems/Makefile.am b/src/plugins/contrib/wxContribItems/Makefile.am
+index becec6181..7125b4c14 100644
+--- a/src/plugins/contrib/wxContribItems/Makefile.am
++++ b/src/plugins/contrib/wxContribItems/Makefile.am
+@@ -1,6 +1,6 @@
+-SUBDIRS = wxchart wxFlatNotebook wxthings wxImagePanel wxSpeedButton KWIC wxled wxmathplot
++SUBDIRS = wxFlatNotebook wxthings wxImagePanel wxSpeedButton KWIC wxled wxmathplot
+ 
+ EXTRA_DIST = $(srcdir)/*.cbp
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+-pkgconfig_DATA = wxsmith-contrib.pc cb_wxcontrib.pc cb_wxchartctrl.pc cb_wxcustombutton.pc cb_wxflatnotebook.pc cb_wximagepanel.pc cb_wxspeedbutton.pc cb_wxKWIC.pc cb_wxled.pc cb_wxmathplot.pc
++pkgconfig_DATA = wxsmith-contrib.pc cb_wxcontrib.pc cb_wxcustombutton.pc cb_wxflatnotebook.pc cb_wximagepanel.pc cb_wxspeedbutton.pc cb_wxKWIC.pc cb_wxled.pc cb_wxmathplot.pc
+diff --git a/src/plugins/contrib/wxSmithContribItems/Makefile.am b/src/plugins/contrib/wxSmithContribItems/Makefile.am
+index 689848c72..8db999cd4 100644
+--- a/src/plugins/contrib/wxSmithContribItems/Makefile.am
++++ b/src/plugins/contrib/wxSmithContribItems/Makefile.am
+@@ -7,7 +7,6 @@ AM_CPPFLAGS = $(WX_CXXFLAGS) \
+ 		-I$(top_srcdir)/src/plugins/contrib/wxSmith/wxwidgets \
+ 		-I$(top_srcdir)/src/plugins/contrib/wxSmith/wxwidgets/properties \
+ 		-I$(top_srcdir)/src/plugins/contrib/wxSmith/properties \
+-		-I$(srcdir)/../wxContribItems/wxchart/include \
+ 		-I$(srcdir)/../wxContribItems/wxFlatNotebook/include \
+ 		-I$(srcdir)/../wxContribItems/wxImagePanel/include \
+ 		-I$(srcdir)/../wxContribItems/wxthings/include \
+@@ -29,7 +28,6 @@ libwxsmithcontribitems_la_LDFLAGS = @MODULE_SHARED_LDFLAGS@ -version-info 0:1:0
+ 
+ libwxsmithcontribitems_la_LIBADD = ../../../sdk/libcodeblocks.la \
+ 		       ../wxSmith/libwxsmithlib.la \
+-			../wxContribItems/wxchart/libwxchartctrl.la \
+ 			../wxContribItems/wxFlatNotebook/libwxflatnotebook.la \
+ 			../wxContribItems/wxImagePanel/libwximagepanel.la \
+ 			../wxContribItems/wxSpeedButton/libwxspeedbutton.la \
+@@ -40,8 +38,7 @@ libwxsmithcontribitems_la_LIBADD = ../../../sdk/libcodeblocks.la \
+ 			../wxContribItems/wxmathplot/libwxmathplot.la \
+ 			$(WX_LIBS)
+ 
+-EXTRA_DIST = $(srcdir)/wxchart/*.xpm \
+-		$(srcdir)/wxchart/*.png \
++EXTRA_DIST = \
+ 		$(srcdir)/wximagebutton/*.xpm \
+ 		$(srcdir)/wximagepanel/*.xpm \
+ 		$(srcdir)/wxspeedbutton/*.xpm \
+@@ -72,7 +69,6 @@ wxsmithcontribitems.zip: manifest.xml
+ 
+ libwxsmithcontribitems_la_SOURCES = \
+ ./wxflatnotebook/wxsFlatNotebook.cpp \
+-./wxchart/wxschart.cpp \
+ ./wxthings/wxscustombutton.cpp \
+ ./wximagebutton/wxsimagebutton.cpp \
+ ./wximagepanel/wxsimagepanel.cpp \
+-- 
+2.53.0.windows.2
+
