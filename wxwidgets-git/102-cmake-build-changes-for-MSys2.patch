@@ -1,0 +1,27 @@
+From 9bd131976b6fe43ef9b501ea1594ce1d712e3721 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 30 Mar 2026 17:50:02 -0400
+Subject: cmake build changes for MSys2
+
+---
+ build/cmake/toolkit.cmake | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/build/cmake/toolkit.cmake b/build/cmake/toolkit.cmake
+index ab997ccb1c..4395b88ebc 100644
+--- a/build/cmake/toolkit.cmake
++++ b/build/cmake/toolkit.cmake
+@@ -22,6 +22,10 @@ if(WIN32)
+     set(wxDEFAULT_TOOLKIT msw)
+     set(wxTOOLKIT_OPTIONS msw gtk2 gtk3 qt)
+     set(wxPLATFORM WIN32)
++elseif(MSYS)
++    set(wxDEFAULT_TOOLKIT gtk3)
++    set(wxTOOLKIT_OPTIONS msw gtk2 gtk3 qt)
++    set(wxPLATFORM MSYS)
+ elseif(APPLE AND IPHONE)
+     set(wxDEFAULT_TOOLKIT osx_iphone)
+     set(wxTOOLKIT_OPTIONS osx_iphone)
+-- 
+2.53.0.windows.2
+
