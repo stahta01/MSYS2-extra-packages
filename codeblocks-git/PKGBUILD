@@ -1,0 +1,146 @@
+# Contributor: Mehdi Chinoune <mehdi.chinoune@hotmail.com>
+# Contributor: Tim Stahlhut <stahta01@gmail.com>
+
+# Length of the path can be too long and the wxSmith plugin is the first to break.
+# "C:\devel\MINGW-packages\mingw-w64-codeblocks_dm" works
+# "C:\devel\MINGW-packages\mingw-w64-codeblocks_darkmode" fails
+
+_wx_basever=3.3
+
+_namesuffix="-git"
+_basename=codeblocks
+_realname=codeblocks
+_mingw_suff=mingw-w64
+pkgbase=${_basename}${_namesuffix}
+pkgname=("${_realname}")
+_basever=25.03
+pkgver=25.03.r13832
+pkgrel=1
+_sourcedir=${_basename}-git
+pkgdesc="Cross-platform C/C++ IDE"
+options=('!strip' 'debug')
+arch=('i686' 'x86_64')
+url='https://www.codeblocks.org/'
+msys2_repository_url="https://sourceforge.net/p/codeblocks/code/HEAD/tree/trunk/"
+msys2_references=(
+  'archlinux: codeblocks'
+)
+license=('spdx:GPL-3.0-or-later')
+depends=('gcc-libs'
+         "${_mingw_suff}-drmingw"
+         'hunspell'
+         "tinyxml"
+         "wxwidgets${_wx_basever}-msw-libs")
+makedepends=('gcc'
+             "autotools"
+             "wxwidgets${_wx_basever}-msw"
+             "wxwidgets${_wx_basever}-msw-cb_headers"
+#             "boost"
+             'zip'
+             'git')
+#optdepends=("clang-tools-extra: needed by Clangd_Client plugin"
+            #"cppcheck: needed by cppcheck plugin")
+source=(${_sourcedir}::"git+https://github.com/arnholm/codeblocks_sfmirror.git"
+        '001-MSys2-edit-tools-Makefile.am-skip-CBLauncher.patch'
+        '003-Add-guard-around-defining-wxOVERRIDE.patch'
+        '004-Add-defined-__MSYS__-guards.patch'
+        '005-Fix-run-time-problem-of-missing-plugins.patch'
+        '006-define-_chmod-chmod.patch'
+        '007-Edit-Makefile.am-remove-wxchart-stuff.patch')
+sha256sums=('SKIP'
+            'a2bada68e70012ce6a7e3a57c3b938a908a2900d70edd79d883da3bd45e1cc46'
+            'a673901ab7fb8aede8d0f6f8b37a0eb5dabb48226ca79c5380cccd7a4a3783a4'
+            '28f1481c46460a5336ffbb39dcdcfd32c9408fd367b336fdc39d59e61ec4088c'
+            '3f40cda554bb018c37c4152627090d47519c1cbf475e9465c5e84f9f6d65f0a0'
+            '8bd03703c612ac09d87d664bb62db8b69363b2009dd0538721ec59b27ec4c3e5'
+            '2f8081f6638245031de518fa9400f5b39b4e25c0658cd0e7c981d76174fd1300')
+
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    if patch --dry-run -Rbp1 -i "${srcdir}/${_patch}" > /dev/null 2>&1 ; then
+      msg2 "Skipping ${_patch} because it likely was already applied"
+    else
+      msg2 "Applying ${_patch}"
+      patch -Nbp1 -i "${srcdir}/${_patch}"
+    fi
+  done
+}
+
+pkgver() {
+  cd "${_sourcedir}"
+  _revision=$(git log --graph | grep 'git-svn-id' | head -n 1 | grep -o -e "@\([0-9]*\)" | tr -d '@ ')
+  printf ${_basever}.r${_revision}
+}
+
+prepare() {
+  cd "${_sourcedir}"
+
+  apply_patch_with_msg \
+    001-MSys2-edit-tools-Makefile.am-skip-CBLauncher.patch \
+    004-Add-defined-__MSYS__-guards.patch \
+    005-Fix-run-time-problem-of-missing-plugins.patch \
+    006-define-_chmod-chmod.patch
+
+  # wxOVERRIDE patch reduces warning building and might prevent run-time issues
+  apply_patch_with_msg 003-Add-guard-around-defining-wxOVERRIDE.patch
+  # wxchart patch needed to build with wx git master branch; disables wxchart code; wxchart code needs fixed
+  apply_patch_with_msg 007-Edit-Makefile.am-remove-wxchart-stuff.patch
+
+  ./bootstrap
+}
+
+build() {
+  [[ -d "${srcdir}/build-${MSYSTEM_CARCH}" ]] && rm -rf "${srcdir}/build-${MSYSTEM_CARCH}"
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}" && cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  export lt_cv_deplibs_check_method='pass_all'
+
+  CXXFLAGS+=" -D_GNU_SOURCE=1 -D__USE_W32_SOCKETS=1" \
+  CXXFLAGS+=" -Wno-ignored-attributes" \
+  ../${_sourcedir}/configure \
+    --prefix="${MSYSTEM_PREFIX}" \
+    --disable-pch \
+    --with-contrib-plugins=all,-Valgrind,-NassiShneiderman
+
+  # NassiShneiderman needs boost
+
+  make #--jobs=1
+
+  cd "${srcdir}/${_sourcedir}/src/tools/cbp2make"
+  make -f cbp2make.cbp.mak.unix clean
+  if check_option "debug" "n"; then
+    make -f cbp2make.cbp.mak.unix release
+  else
+    make -f cbp2make.cbp.mak.unix debug
+  fi
+}
+
+check() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  make check
+}
+
+package() {
+  provides=("${_basename}-wx${_wx_basever}")
+  conflicts=("${_basename}")
+
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  make install DESTDIR="${pkgdir}"
+
+  [[ -f "${pkgdir}${MSYSTEM_PREFIX}/lib/codeblocks/bin/libwxchartctrl-0.dll" ]] && mv "${pkgdir}"${MSYSTEM_PREFIX}/lib/codeblocks/bin/*.dll "${pkgdir}"${MSYSTEM_PREFIX}/bin
+
+  install -Dm644 "${srcdir}"/${_sourcedir}/COPYING \
+    "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE
+
+  cd "${srcdir}/${_sourcedir}/src/tools/cbp2make"
+  mkdir -p "${pkgdir}${MSYSTEM_PREFIX}/bin/"
+  if check_option "debug" "n"; then
+    cp bin/Release/cbp2make.exe "${pkgdir}${MSYSTEM_PREFIX}/bin/"
+  else
+    cp bin/Debug/cbp2make.exe "${pkgdir}${MSYSTEM_PREFIX}/bin/"
+  fi
+  install -Dm644 "${srcdir}/${_sourcedir}/src/tools/cbp2make/COPYING" "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/cbp2make/LICENSE"
+}

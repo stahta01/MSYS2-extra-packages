@@ -1,0 +1,62 @@
+From 7d55115328ed48de0e8ae61bfea88b8c97da9098 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Fri, 10 Apr 2026 15:10:57 -0400
+Subject: Add defined(__MSYS__) guards
+
+---
+ src/plugins/compilergcc/depslib/src/filent.c   | 2 +-
+ src/plugins/compilergcc/depslib/src/fileunix.c | 2 +-
+ src/tools/ConsoleRunner/main.cpp               | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/plugins/compilergcc/depslib/src/filent.c b/src/plugins/compilergcc/depslib/src/filent.c
+index 04d8b5678..47ca36108 100644
+--- a/src/plugins/compilergcc/depslib/src/filent.c
++++ b/src/plugins/compilergcc/depslib/src/filent.c
+@@ -50,7 +50,7 @@
+ # include "filesys.h"
+ # include "pathsys.h"
+ 
+-# ifdef OS_NT
++# if defined(OS_NT) && !defined(__MSYS__)
+ 
+ # ifdef __BORLANDC__
+ # if __BORLANDC__ < 0x550
+diff --git a/src/plugins/compilergcc/depslib/src/fileunix.c b/src/plugins/compilergcc/depslib/src/fileunix.c
+index dca547304..eacf1d038 100644
+--- a/src/plugins/compilergcc/depslib/src/fileunix.c
++++ b/src/plugins/compilergcc/depslib/src/fileunix.c
+@@ -54,7 +54,7 @@
+ # include "filesys.h"
+ # include "pathsys.h"
+ 
+-# ifdef USE_FILEUNIX
++# if defined(USE_FILEUNIX) || defined(__MSYS__)
+ 
+ #if defined(OS_CYGWIN) /* TNB */
+ #include <sys/unistd.h>
+diff --git a/src/tools/ConsoleRunner/main.cpp b/src/tools/ConsoleRunner/main.cpp
+index e5b267730..457130d4a 100644
+--- a/src/tools/ConsoleRunner/main.cpp
++++ b/src/tools/ConsoleRunner/main.cpp
+@@ -10,7 +10,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <sys/time.h>
+-#ifdef __WXMSW__
++#if defined(__WXMSW__) && !(__MSYS__)
+     #include <windows.h>
+     #include <conio.h>
+     #define wait_key getch
+@@ -40,7 +40,7 @@ bool hasSpaces(const char* str)
+ 
+ int execute_command(char *cmdline)
+ {
+-#ifdef __WXMSW__
++#if defined(__WXMSW__) && !(__MSYS__)
+     //Windows's system() seems to not be able to handle parentheses in
+     //the path, so we have to launch the program a different way.
+ 
+-- 
+2.53.0.windows.2
+

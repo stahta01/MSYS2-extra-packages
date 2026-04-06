@@ -1,0 +1,51 @@
+From 144800bd06d9ff0b68a3417240965394600470e3 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Wed, 21 Jan 2026 22:01:35 -0500
+Subject: Add guard around defining wxOVERRIDE
+
+---
+ .../clangd_client/src/codecompletion/IdleCallbackHandler.h    | 4 ++++
+ .../src/codecompletion/LSPEventCallbackHandler.h              | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/src/plugins/contrib/clangd_client/src/codecompletion/IdleCallbackHandler.h b/src/plugins/contrib/clangd_client/src/codecompletion/IdleCallbackHandler.h
+index c35b7bbb3..3d2338a2c 100644
+--- a/src/plugins/contrib/clangd_client/src/codecompletion/IdleCallbackHandler.h
++++ b/src/plugins/contrib/clangd_client/src/codecompletion/IdleCallbackHandler.h
+@@ -16,11 +16,15 @@
+ #include "logmanager.h"
+ #include "parser/cclogger.h"
+ 
++#if wxCHECK_VERSION(3,1,0)
++#include <wx/defs.h>
++#else
+ #ifdef HAVE_OVERRIDE
+     #define wxOVERRIDE override
+ #else /*  !HAVE_OVERRIDE */
+     #define wxOVERRIDE
+ #endif /*  HAVE_OVERRIDE */
++#endif /*  wxCHECK_VERSION(3,1,0) */
+ 
+ // This is a base class used to process all method calls.
+ // ----------------------------------------------------------------------------
+diff --git a/src/plugins/contrib/clangd_client/src/codecompletion/LSPEventCallbackHandler.h b/src/plugins/contrib/clangd_client/src/codecompletion/LSPEventCallbackHandler.h
+index 3b7db290d..de7d1d895 100644
+--- a/src/plugins/contrib/clangd_client/src/codecompletion/LSPEventCallbackHandler.h
++++ b/src/plugins/contrib/clangd_client/src/codecompletion/LSPEventCallbackHandler.h
+@@ -16,11 +16,15 @@
+ #include "manager.h"
+ #include "logmanager.h"
+ 
++#if wxCHECK_VERSION(3,1,0)
++#include <wx/defs.h>
++#else
+ #ifdef HAVE_OVERRIDE
+     #define wxOVERRIDE override
+ #else /*  !HAVE_OVERRIDE */
+     #define wxOVERRIDE
+ #endif /*  HAVE_OVERRIDE */
++#endif /*  wxCHECK_VERSION(3,1,0) */
+ 
+ // This is a base class used to process all method calls.
+ // ----------------------------------------------------------------------------
+-- 
