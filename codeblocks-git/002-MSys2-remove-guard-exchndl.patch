@@ -1,0 +1,52 @@
+From cca0627cced91c9851a097265e9760a8af3873bf Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 6 Apr 2026 16:54:58 -0400
+Subject: MSys2 remove/guard exchndl
+
+---
+ src/src/Makefile.am | 2 +-
+ src/src/app.cpp     | 8 +++++---
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/src/Makefile.am b/src/src/Makefile.am
+index d59889bf5..cb032c8d5 100644
+--- a/src/src/Makefile.am
++++ b/src/src/Makefile.am
+@@ -71,7 +71,7 @@ codeblocks_SOURCES = app.cpp \
+ 			watchesdlg.cpp
+ 
+ if CODEBLOCKS_NT
+-codeblocks_LDADD += resources.$(OBJEXT) -lexchndl -lcomctl32
++codeblocks_LDADD += resources.$(OBJEXT) -lcomctl32
+ codeblocks_DEPENDENCIES = resources.$(OBJEXT)
+ codeblocks_SOURCES += associations.cpp
+ resources.$(OBJEXT): resources/resources.rc resources/amd64_dpi_aware_on.manifest
+diff --git a/src/src/app.cpp b/src/src/app.cpp
+index 1b8802874..95f8b5271 100644
+--- a/src/src/app.cpp
++++ b/src/src/app.cpp
+@@ -70,8 +70,10 @@
+ #endif
+ 
+ #ifdef __WXMSW__
+-    #include "exchndl.h"         // Crash handler DLL -> includes windows.h, therefore
+-    #include <wx/msw/winundef.h> // ...include this header file on the NEXT LINE (wxWidgets docs say so)
++    #if !defined(__MSYS__)
++        #include "exchndl.h"         // Crash handler DLL -> includes windows.h, therefore
++        #include <wx/msw/winundef.h> // ...include this header file on the NEXT LINE (wxWidgets docs say so)
++    #endif
+     #include <commctrl.h>
+ #endif
+ 
+@@ -507,7 +509,7 @@ void CodeBlocksApp::InitDebugConsole()
+ 
+ void CodeBlocksApp::InitExceptionHandler()
+ {
+-#ifdef __WXMSW__
++#if defined(__WXMSW__) && !defined(__MSYS__)
+     ExcHndlInit();
+ 
+     // If the executable folder is not writable, as it happens with releases installed under Program Files,
+-- 
+2.53.0.windows.2
+
