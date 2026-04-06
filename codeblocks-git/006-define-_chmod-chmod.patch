@@ -1,0 +1,26 @@
+From bc4cfc5a43f0646d9e2f9ad680eebfbbfd81a210 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Wed, 8 Apr 2026 13:38:56 -0400
+Subject: define _chmod chmod
+
+---
+ src/sdk/projectfileoptionsdlg.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/sdk/projectfileoptionsdlg.cpp b/src/sdk/projectfileoptionsdlg.cpp
+index 83c18859a..5d9310141 100644
+--- a/src/sdk/projectfileoptionsdlg.cpp
++++ b/src/sdk/projectfileoptionsdlg.cpp
+@@ -408,6 +408,9 @@ void ProjectFileOptionsDlg::SaveBuildCommandSelection()
+ bool ProjectFileOptionsDlg::ToggleFileReadOnly(bool setReadOnly)
+ {
+ #ifdef __WXMSW__
++#if defined(__MSYS__) && !defined(_chmod)
++#define _chmod chmod
++#endif
+     // Check for failure
+     const int MS_MODE_MASK = 0x0000ffff; // low word
+     int mask = setReadOnly ? _S_IREAD : ( _S_IREAD | _S_IWRITE );
+-- 
+2.53.0.windows.2
+
