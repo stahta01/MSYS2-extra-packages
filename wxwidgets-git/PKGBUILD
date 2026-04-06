@@ -1,0 +1,341 @@
+####
+#
+# Based on packages found at these URLs
+#     https://archlinux.org/packages/extra/x86_64/wxgtk-common/
+#     https://github.com/msys2/MINGW-packages/tree/master/mingw-w64-wxWidgets
+#
+# Maintainer: Tim Stahlhut <stahta01@gmail.com>
+#
+####
+
+_basename=wxWidgets
+_sourcedir=${_basename}-git
+_wx_basever=3.3
+_namesuffix="-git"
+pkgbase=${_basename}${_namesuffix}
+pkgname=(
+  wxwidgets${_wx_basever}-common${_namesuffix}
+  wxwidgets${_wx_basever}-common-libs${_namesuffix}
+  wxwidgets${_wx_basever}-msw-cb_headers${_namesuffix}
+  wxwidgets${_wx_basever}-msw-libs${_namesuffix}
+  wxwidgets${_wx_basever}-msw${_namesuffix}
+)
+pkgver=3.3.3.0.v+191.c9.gd302e313618
+pkgrel=1
+pkgdesc="A C++ library that lets developers create applications for Windows, Linux and UNIX"
+arch=('i686' 'x86_64')
+license=("custom:wxWindows")
+url="https://www.wxwidgets.org/"
+makedepends=(
+  'diffutils'
+  'git'
+  'make'
+  "gcc"
+  "libpng"
+  "libjpeg-turbo"
+  "libtiff"
+
+  "cmake"
+  "python"
+)
+checkdepends=()
+#options=('strip' 'staticlibs' 'buildflags' '!debug')
+options=('!strip' 'staticlibs' 'buildflags' '!debug')
+#options=('!strip' 'staticlibs' 'buildflags' 'debug')
+source=(
+  ${_sourcedir}::"git+https://github.com/wxWidgets/wxWidgets.git#branch=master"
+
+  001-wxWidgets-3.0.2-relocate-prefix-in-bin-wx-config.patch
+
+  # Patch rejected by wxWidgets team
+  005-wxWidgets-3.1.3-Remove-WX_LIBS_STATIC-from-m4.patch
+
+  101-Use-lib_prefix-of-msys-for-MSYS2.patch
+  102-cmake-build-changes-for-MSys2.patch
+  103-Add-WXMSW-guards-to-cmake-files.patch
+  104-Add-MSYS-guards-to-cmake-files.patch
+  105-Change-cmake-wx-setup-definitions.patch
+  106-warning-reduction-in-common-sckaddr.cpp.patch
+  107-Warning-reduction-when-building-C-B-under-MSys2.patch
+
+  201-Fix-warning-in-trackball-sample.patch
+)
+sha256sums=('SKIP'
+            '2b3b183a6a76ad539abc49a41033aa923c13b395c0e55189ba962068781c7135'
+            '4a4828f0c9cdc638cffde6a30b5dfb14283719acc9e89e19de8ec2d5a80a5aec'
+            'a9e58c170903b8a7b74cf38453feb9d159e4f3bf244a28170e056bb33542f471'
+            'd7d961e7a179e63de2a5d2269308c289153f5989455d05fe48116b41c4f0f9d8'
+            'da2d1553ffbd0226c16b201b0a5fa4715c0780423da9cd18a95fd40e49c96ca1'
+            '0493a89fda64844431890fb63f41ddae5e80afbf2eb6857f66ef80d0c04e7225'
+            'cc2e5e099ecfcd1cfe57f6eee57214ff2f4d39fc7916da01f2851ad095fa8967'
+            'd0462cc9f2f65992791d4df1945119d15259a43da02b751dfcf687fdf2a41d83'
+            '9eceebbb343f598657e7bda61f81f5952dbc23b905f31f4a6110640929bc0ff2'
+            'e322bd18d8fd254e090816ceab0bd53d05660ab57684400e9ae32d6fc8835693')
+
+# Declare global variables; begin with underscore to avoid name conflicts
+_git_base_commit=
+
+pkgver() {
+  cd ${srcdir}/${_sourcedir}
+  local _major=$(head -n 34 include/wx/version.h | grep 'wxMAJOR_VERSION' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  local _minor1=$(head -n 34 include/wx/version.h | grep 'wxMINOR_VERSION' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  local _minor2=$(head -n 34 include/wx/version.h | grep 'wxRELEASE_NUMBER' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  local _minor3=$(head -n 34 include/wx/version.h | grep 'wxSUBRELEASE_NUMBER' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  printf "%s.%s.%s.%s.v+%s.c%s.g%s" "$_major" "$_minor1" "$_minor2" "$_minor3" $(git rev-list --count $(git rev-list -1 ${_git_base_commit} include/wx/version.h)..${_git_base_commit}) $(git rev-list --count ${_git_base_commit}..HEAD) $(git rev-parse --short=11 ${_git_base_commit})
+}
+
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -Nbp1 -i "${srcdir}/${_patch}"
+  done
+}
+
+prepare() {
+  cd "${srcdir}/${_sourcedir}"
+
+  git submodule init
+  git submodule update
+
+  _git_base_commit=$(git rev-parse HEAD)
+  GIT_AM="git am --committer-date-is-author-date"
+
+  git config --local user.name  "nobody"
+  git config --local user.email "nobody@example.com"
+
+  # Fix Run-Time wx-config bug: MSys2 Mingw only patch; Do not try to submit upstream
+  patch -p1 -i "${srcdir}"/001-wxWidgets-3.0.2-relocate-prefix-in-bin-wx-config.patch
+
+  #git am --abort || true
+
+  # MSys2 fails to set WX_LIBS_STATIC correctly; removed to see if something breaks.
+  ${GIT_AM} ${srcdir}/005-wxWidgets-3.1.3-Remove-WX_LIBS_STATIC-from-m4.patch
+
+  ${GIT_AM} ${srcdir}/201-Fix-warning-in-trackball-sample.patch
+
+  ${GIT_AM} ${srcdir}/101-Use-lib_prefix-of-msys-for-MSYS2.patch
+  ${GIT_AM} ${srcdir}/102-cmake-build-changes-for-MSys2.patch
+  ${GIT_AM} ${srcdir}/103-Add-WXMSW-guards-to-cmake-files.patch
+  ${GIT_AM} ${srcdir}/104-Add-MSYS-guards-to-cmake-files.patch
+  ${GIT_AM} ${srcdir}/105-Change-cmake-wx-setup-definitions.patch
+  ${GIT_AM} ${srcdir}/106-warning-reduction-in-common-sckaddr.cpp.patch
+  ${GIT_AM} ${srcdir}/107-Warning-reduction-when-building-C-B-under-MSys2.patch
+}
+
+build() {
+  ####
+  # Configure options added to support other software:
+  #   -DwxUSE_GRAPHICS_CONTEXT=ON   codelite
+  #   -DwxUSE_GRAPHICS_DIRECT2D     codeblocks
+  #
+  # Configure options added to check for build issues
+  #   -DwxBUILD_PRECOMP=OFF
+  #
+  # Configure options added to avoid possible future issues
+  #   -DCMAKE_CXX_STANDARD=17
+  #   -DwxUSE_STL=ON
+  #
+  # Configure options added to avoid warnings:
+  #   -DwxUSE_REGEX=builtin
+  #
+  ####
+
+  declare -a _common_config
+  _common_config+=(
+    -G"Ninja"
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX}
+    -DCMAKE_CXX_STANDARD=17
+    -DwxBUILD_INSTALL_PLATFORM_SUBDIR=OFF
+    -DwxBUILD_INSTALL=ON
+    -DwxBUILD_WIN32_MSVC_NAMING=OFF
+    -DwxBUILD_INSTALL_USE_SYMLINK=OFF
+    -DwxUSE_IFF=ON
+    -DwxUSE_GRAPHICS_CONTEXT=ON
+    -DwxUSE_GRAPHICS_DIRECT2D=ON
+    -DwxBUILD_MONOLITHIC=OFF
+    -DwxBUILD_PRECOMP=OFF
+    -DwxBUILD_TESTS=OFF
+    -DwxUSE_LIBLZMA=ON
+    -DwxUSE_WEBREQUEST=OFF
+    -DwxUSE_STACKWALKER=ON
+    -DwxUSE_DBGHELP=ON
+    -DwxUSE_LIBWEBP=OFF
+  )
+
+  if check_option "debug" "y"; then
+    _common_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  else
+    _common_config+=("-DCMAKE_BUILD_TYPE=Release" "-DwxBUILD_OPTIMISE=ON")
+  fi
+
+  CXXFLAGS+=" -Wno-ignored-attributes -Wno-enum-compare-switch -Wno-deprecated-declarations"
+
+  _toolkits="msw"
+
+  for _toolkit in ${_toolkits}; do
+    for _libtype in shared static; do
+      _opengl="OFF"
+      if [[ ${_libtype} == shared ]]; then
+        _is_shared="ON"
+        _is_external="sys"
+      else
+        _is_shared="OFF"
+        _is_external="builtin"
+      fi
+
+      CXXFLAGS="-D__WINDOWS__=1" \
+        cmake \
+          -DBUILD_SHARED_LIBS=${_is_shared} \
+          -DwxBUILD_SHARED=${_is_shared} \
+          -DwxBUILD_TOOLKIT=${_toolkit} \
+          -DwxUSE_EXPAT=${_is_external} \
+          -DwxUSE_LIBJPEG=${_is_external} \
+          -DwxUSE_LIBPNG=${_is_external} \
+          -DwxUSE_LIBTIFF=${_is_external} \
+          -DwxUSE_REGEX=${_is_external} \
+          -DwxUSE_ZLIB=${_is_external} \
+          -DwxUSE_OPENGL=${_opengl} \
+          "${_common_config[@]}" \
+          -S wxWidgets-git \
+          -B build-${_toolkit}-${MSYSTEM_CARCH}-${_libtype}
+
+      cmake --build build-${_toolkit}-${MSYSTEM_CARCH}-${_libtype}
+
+      DESTDIR="${srcdir}"/install-${_toolkit}-${MSYSTEM_CARCH}-${_libtype} \
+      cmake --install build-${_toolkit}-${MSYSTEM_CARCH}-${_libtype}
+
+    done
+  done
+}
+
+
+package_wxwidgets3.3-common-git() {
+  pkgdesc="Static libraries and headers for wxWidgets ${_wx_basever}"
+  depends=("wxwidgets${_wx_basever}-common-libs"
+           "gcc-libs")
+  provides=("wxwidgets-common" "wxwidgets${_wx_basever}-common")
+  conflicts=("wxwidgets-common" "wxwidgets${_wx_basever}-common")
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/share
+  cp -a --recursive "${srcdir}/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/share/" \
+      "${pkgdir}"${MSYSTEM_PREFIX}/
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/include
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/include
+  cp -a --recursive "${srcdir}/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/include/" \
+      "${pkgdir}"${MSYSTEM_PREFIX}/
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/bin
+  cp -p "${srcdir}"/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/bin/wxrc*.* "${pkgdir}"${MSYSTEM_PREFIX}/bin/
+
+  install -Dm644 wxWidgets-git/wxwin.m4 \
+    -t "${pkgdir}"${MSYSTEM_PREFIX}/share/aclocal
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/lib
+  cp -a "${srcdir}"/install-msw-${MSYSTEM_CARCH}-static${MSYSTEM_PREFIX}/lib/*.a  "${pkgdir}"${MSYSTEM_PREFIX}/lib/
+  cp -a "${srcdir}"/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/lib/*.a  "${pkgdir}"${MSYSTEM_PREFIX}/lib/
+}
+
+package_wxwidgets3.3-msw-cb_headers-git() {
+  pkgdesc="private wxWidgets ${_wx_basever} MSW headers needed by Code::Blocks"
+  depends=("wxwidgets${_wx_basever}-common")
+  provides=("wxwidgets${_wx_basever}-msw-cb_headers")
+  conflicts=("wxwidgets${_wx_basever}-msw-cb_headers")
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/include/wx-${_wx_basever}/wx/msw/private
+  cd "${pkgdir}"${MSYSTEM_PREFIX}/include/wx-${_wx_basever}/wx/msw/private
+  cp "${srcdir}"/wxWidgets-git/include/wx/msw/private/comptr.h ./
+  cp "${srcdir}"/wxWidgets-git/include/wx/msw/private/graphicsd2d.h ./
+  cp "${srcdir}"/wxWidgets-git/include/wx/msw/private/keyboard.h ./
+}
+
+package_wxwidgets3.3-common-libs-git() {
+  pkgdesc="wxBase shared libraries for wxwidgets ${_wx_basever}"
+  depends=("curl"
+           "expat"
+           "gcc-libs"
+           "pcre2"
+           "xz"
+           "zlib")
+  provides=("wxwidgets${_wx_basever}-common-libs")
+  conflicts=("wxwidgets${_wx_basever}-common-libs")
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/bin
+  cp -a "${srcdir}"/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/bin/*.dll "${pkgdir}"${MSYSTEM_PREFIX}/bin/
+
+  rm    "$pkgdir"${MSYSTEM_PREFIX}/bin/*wxmsw*.dll   # in msw libs package
+
+  # License files
+  cd "${srcdir}"/wxWidgets-git/docs
+  install -Dm644 preamble.txt "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}${_wx_basever}/preamble.txt"
+  install -Dm644 licence.txt  "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}${_wx_basever}/licence.txt"
+  install -Dm644 licendoc.txt "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}${_wx_basever}/licendoc.txt"
+  install -Dm644 lgpl.txt     "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}${_wx_basever}/lgpl.txt"
+  install -Dm644 gpl.txt      "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}${_wx_basever}/gpl.txt"
+  install -Dm644 xserver.txt  "${pkgdir}${MSYSTEM_PREFIX}/share/licenses/${_realname}${_wx_basever}/xserver.txt"
+}
+
+package_wxwidgets3.3-msw-libs-git() {
+  pkgdesc="wxMSW shared libraries for wxwidgets ${_wx_basever}"
+  depends=("gcc-libs"
+           "libjpeg-turbo"
+           "libpng"
+           "libtiff"
+           #"libwebp"
+           "wxwidgets${_wx_basever}-common-libs")
+  provides=("wxwidgets${_wx_basever}-msw-libs")
+  conflicts=("wxwidgets${_wx_basever}-msw-libs")
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/bin
+  cp -a "${srcdir}"/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/bin/*.dll "${pkgdir}"${MSYSTEM_PREFIX}/bin/
+
+  rm    "$pkgdir"${MSYSTEM_PREFIX}/bin/*wxbase*.dll  # in base libs package
+}
+
+package_wxwidgets3.3-msw-git() {
+  pkgdesc="A C++ library that lets developers create applications for Windows, Linux and UNIX"
+  depends=("wxwidgets${_wx_basever}-msw-libs"
+           "wxwidgets${_wx_basever}-common")
+  provides=("wxwidgets${_wx_basever}-msw"
+            "wxwidgets-msw")
+  conflicts=("wxwidgets-msw")
+
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/lib
+  cp -a --recursive "${srcdir}/install-msw-${MSYSTEM_CARCH}-static${MSYSTEM_PREFIX}/lib/wx/" \
+      "${pkgdir}"${MSYSTEM_PREFIX}/lib
+
+  cp -a --recursive "${srcdir}/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/lib/wx/" \
+      "${pkgdir}"${MSYSTEM_PREFIX}/lib
+
+  cp -a --recursive "${srcdir}"/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/lib/cmake/ \
+      "${pkgdir}"${MSYSTEM_PREFIX}/lib
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/bin
+  cp -a "${srcdir}"/install-msw-${MSYSTEM_CARCH}-static${MSYSTEM_PREFIX}/bin/wx-config* "${pkgdir}"${MSYSTEM_PREFIX}/bin/
+  mv "${pkgdir}"${MSYSTEM_PREFIX}/bin/wx-config{,-static}
+  cp -a "${srcdir}"/install-msw-${MSYSTEM_CARCH}-shared${MSYSTEM_PREFIX}/bin/wx-config* "${pkgdir}"${MSYSTEM_PREFIX}/bin/
+
+  # Replace real full path with psuedo full path; to prevent
+  # WARNING: Package contains reference to $(cygpath -m /)
+  local MSYSTEM_PREFIX_WIN=$(cygpath -am ${MSYSTEM_PREFIX})
+  sed -s "s|${MSYSTEM_PREFIX_WIN}|\$\{prefix\}|g" -i "${pkgdir}${MSYSTEM_PREFIX}/bin/wx-config"
+  sed -s "s|${MSYSTEM_PREFIX_WIN}|\$\{prefix\}|g" -i "${pkgdir}${MSYSTEM_PREFIX}/bin/wx-config-static"
+  sed -s "s|${MSYSTEM_PREFIX_WIN}|\$\{prefix\}|g" -i "${pkgdir}${MSYSTEM_PREFIX}/lib/wx/config/msw-unicode-${_wx_basever}"
+  sed -s "s|${MSYSTEM_PREFIX_WIN}|\$\{prefix\}|g" -i "${pkgdir}${MSYSTEM_PREFIX}/lib/wx/config/msw-unicode-static-${_wx_basever}"
+
+  # create wx-config copy with version file suffix
+  cp -a "${pkgdir}"${MSYSTEM_PREFIX}/bin/wx-config{,-${_wx_basever}}
+}
+
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name#}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done
+# template end;
