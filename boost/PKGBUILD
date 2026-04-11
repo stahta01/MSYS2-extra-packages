@@ -1,0 +1,130 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=boost
+pkgbase=${_realname}
+pkgname=("${_realname}"
+         "${_realname}-libs")
+pkgver=1.90.0
+pkgrel=3
+pkgdesc="Free peer-reviewed portable C++ source libraries"
+arch=('i686' 'x86_64')
+url="https://www.boost.org/"
+msys2_repository_url="https://github.com/boostorg/boost"
+msys2_references=(
+  'archlinux: boost'
+  "cpe: cpe:/a:boost:boost"
+)
+license=('spdx:BSL-1.0')
+depends=("gcc-libs"
+         "bzip2"
+         'icu'
+         "xz"
+         "zstd"
+         "zlib")
+makedepends=("gcc"
+             "cmake"
+             "ninja"
+             'python')
+source=(https://github.com/boostorg/boost/releases/download/boost-${pkgver}/boost-${pkgver}-cmake.tar.xz
+        0001-Fix-building-with-cmake-on-MINGW.patch
+        0002-No-Arch-in-library-name-tag.patch
+        boost-1.63.0-python-test-PyImport_AppendInittab.patch)
+sha256sums=('aca59f889f0f32028ad88ba6764582b63c916ce5f77b31289ad19421a96c555f'
+            'fb32ea452e02196552dae815eb44be5b18d849b0f6e24ecf5cf7be15e42ad85b'
+            'ee45d199c0e578a8d670ee6c6fa46466a53a02690c94f9221c67bbc9ab3387dc'
+            'b22196b6415f5e1c0fe56b49a12ea7c20073b15a5f31907f363c7be38d70d628')
+
+# Helper macros to help make tasks easier #
+apply_patch_with_msg() {
+  for _patch in "$@"
+  do
+    msg2 "Applying ${_patch}"
+    patch -Nbp1 -i "${srcdir}/${_patch}"
+  done
+}
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  # https://bugzilla.redhat.com/show_bug.cgi?id=1102667
+  apply_patch_with_msg \
+    boost-1.63.0-python-test-PyImport_AppendInittab.patch
+
+#    0001-Fix-building-with-cmake-on-MINGW.patch \
+
+  apply_patch_with_msg \
+    0002-No-Arch-in-library-name-tag.patch
+}
+
+build() {
+  declare -a _extra_config
+  if check_option "debug" "n"; then
+    _extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    _extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  _extra_config+=('-DBOOST_ENABLE_PYTHON=ON')
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+      -G'Ninja' \
+      -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+      "${_extra_config[@]}" \
+      -DBUILD_SHARED_LIBS="OFF" \
+      -DBOOST_INSTALL_LAYOUT=tagged \
+      -DBOOST_STACKTRACE_ENABLE_FROM_EXCEPTION=OFF \
+      -DPython_EXECUTABLE=${MSYSTEM_PREFIX}/bin/python \
+      -DBUILD_TESTING=OFF \
+      -S ${_realname}-${pkgver} \
+      -B build-${MSYSTEM_CARCH}-static
+
+  ${MSYSTEM_PREFIX}/bin/cmake --build build-${MSYSTEM_CARCH}-static
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+      -G'Ninja' \
+      -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+      "${_extra_config[@]}" \
+      -DBUILD_SHARED_LIBS="ON" \
+      -DBOOST_INSTALL_LAYOUT=tagged \
+      -DBOOST_STACKTRACE_ENABLE_FROM_EXCEPTION=OFF \
+      -DPython_EXECUTABLE=${MSYSTEM_PREFIX}/bin/python \
+      -DBUILD_TESTING=OFF \
+      -S ${_realname}-${pkgver} \
+      -B build-${MSYSTEM_CARCH}
+
+  ${MSYSTEM_PREFIX}/bin/cmake --build build-${MSYSTEM_CARCH}
+}
+
+package_boost() {
+  depends=("boost-libs")
+  optdepends=("python: For Boost.Python")
+
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install build-${MSYSTEM_CARCH}-static
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install build-${MSYSTEM_CARCH}
+
+  install -Dm644 "${srcdir}"/${_realname}-${pkgver}/LICENSE_1_0.txt \
+    "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE
+
+  # split runtime libraries
+  mkdir -p dest${MSYSTEM_PREFIX}/bin
+  mv "${pkgdir}${MSYSTEM_PREFIX}"/bin/*.dll dest${MSYSTEM_PREFIX}/bin/
+}
+
+package_boost-libs() {
+  pkgdesc+=" (runtime libraries)"
+
+  mv dest/* "${pkgdir}"
+
+  install -Dm644 "${srcdir}"/${_realname}-${pkgver}/LICENSE_1_0.txt \
+    "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}-libs/LICENSE
+}
+
+# vim: set ft=bash :
+
+# generate wrappers
+for _name in "${pkgname[@]}"; do
+  _short="package_${_name#}"
+  _func="$(declare -f "${_short}")"
+  eval "${_func/#${_short}/package_${_name}}"
+done
+# template end;
