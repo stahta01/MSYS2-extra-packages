@@ -1,0 +1,111 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+# Contributor: Martell Malone <martellmalone@gmail.com>
+
+_realname=crt
+_mingw_suff=mingw-w64
+pkgbase="${_mingw_suff}-${_realname}"
+_targetpkgs=("${_mingw_suff}-ucrt64-${_realname}" "${_mingw_suff}-mingw32-${_realname}")
+pkgname=(#"${_mingw_suff}-${_realname}" 
+         "${_targetpkgs[@]}")
+pkgver=13.0.0.r1.gb45abfec4
+pkgrel=1
+pkgdesc='MinGW-w64 CRT for compiler'
+arch=('i686' 'x86_64')
+url='https://www.mingw-w64.org'
+msys2_repository_url='https://sourceforge.net/p/mingw-w64/mingw-w64/ci/master/tree/mingw-w64-crt'
+license=('custom')
+groups=("${_mingw_suff}-toolchain" "${_mingw_suff}")
+makedepends=('git' 'autotools')
+if [[ "${CARCH}" == 'i686' ]]; then
+  makedepends+=('mingw-w64-mingw32-gcc')
+  makedepends+=('mingw-w64-mingw32-binutils')
+  makedepends+=('mingw-w64-mingw32-headers')
+else
+  makedepends+=('mingw-w64-ucrt64-gcc')
+  makedepends+=('mingw-w64-ucrt64-binutils')
+  makedepends+=('mingw-w64-ucrt64-headers')
+fi
+options=('!strip' 'staticlibs' '!emptydirs' '!buildflags')
+_commit='b45abfec4e116b33620de597b99b1f0af3ab6a6a'
+source=("mingw-w64"::"git+https://git.code.sf.net/p/mingw-w64/mingw-w64#commit=$_commit")
+
+sha256sums=('38cb5bc2209c942f76acad3c5d7083782b1cceb64878ba24a4c876ea053d40b9')
+msys2_references=(
+  'archlinux: mingw-w64-crt'
+  'cpe: cpe:/a:mingw-w64:mingw-w64'
+)
+
+pkgver() {
+  cd "${srcdir}/mingw-w64"
+
+  git describe --long ${_commit} | sed 's/\([^-]*-g\)/r\1/;s/-/./g;s/^v//g'
+}
+
+_build() {
+  _target=$1
+  msg "Building ${_target} CRT"
+  case "${_target}" in
+    i686*)
+      _crt_configure_args="--disable-lib64 --enable-lib32"
+    ;;
+    x86_64*)
+      _crt_configure_args="--disable-lib32 --enable-lib64"
+    ;;
+  esac
+    mkdir -p ${srcdir}/crt-${_target} && cd ${srcdir}/crt-${_target}
+
+  if [[ "${_target}" == "x86_64-w64-mingw32" ]]; then
+    _default_msvcrt=ucrt
+  else
+    _default_msvcrt=msvcrt
+  fi
+
+  unset CC
+  ${srcdir}/mingw-w64/mingw-w64-crt/configure \
+  --build=${CHOST} \
+  --prefix=/usr/${_target} \
+  --host=${_target} \
+  --with-default-msvcrt=${_default_msvcrt} \
+  --disable-dependency-tracking \
+  ${_crt_configure_args}
+
+  make
+}
+
+build() {
+  for _pkg in "${_targetpkgs[@]}"; do
+    case "$_pkg" in
+      "${_mingw_suff}-ucrt64-${_realname}") _build "x86_64-w64-mingw32" ;;
+      "${_mingw_suff}-mingw32-${_realname}") _build "i686-w64-mingw32" ;;
+    esac
+  done
+}
+
+_package() {
+  _target=$1
+  msg "Installing ${_target} crt"
+  cd ${srcdir}/crt-${_target}
+  make DESTDIR=${pkgdir} install
+}
+
+#package_mingw-w64-crt() {
+  #pkgdesc+=" (meta package, for backward compatibility)"
+  #depends=("${_targetpkgs[@]}")
+  #provides=("${_mingw_suff}-${_realname}-git")
+  #conflicts=("${_mingw_suff}-${_realname}-git")
+  #replaces=("${_mingw_suff}-${_realname}-git")
+#}
+
+package_mingw-w64-ucrt64-crt() {
+  depends=("${_mingw_suff}-ucrt64-headers")
+  conflicts=("${_mingw_suff}-${_realname}<=12.0.0.r0.g819a6ec2e-1")
+
+  _package "x86_64-w64-mingw32"
+}
+
+package_mingw-w64-mingw32-crt() {
+  depends=("${_mingw_suff}-mingw32-headers")
+  conflicts=("${_mingw_suff}-${_realname}<=12.0.0.r0.g819a6ec2e-1")
+
+  _package "i686-w64-mingw32"
+}
