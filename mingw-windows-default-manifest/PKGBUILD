@@ -1,0 +1,80 @@
+# Contributor: Alexey Pavlov <alexpux@gmail.com>
+
+_realname=windows-default-manifest
+_mingw_suff=mingw-w64
+pkgbase="${_mingw_suff}-${_realname}"
+_targetpkgs=("${_mingw_suff}-ucrt64-${_realname}" "${_mingw_suff}-mingw32-${_realname}")
+pkgname=(#"${_mingw_suff}-${_realname}" 
+         "${_targetpkgs[@]}")
+groups=("${_mingw_suff}-toolchain" "${_mingw_suff}")
+pkgver=6.4
+pkgrel=5
+pkgdesc='Default Windows application manifest'
+url='https://sourceware.org/git/cygwin-apps/windows-default-manifest.git'
+arch=('i686' 'x86_64')
+license=('BSD')
+makedepends=('git' 'autotools')
+if [[ "${CARCH}" == 'i686' ]]; then
+  makedepends+=('mingw-w64-mingw32-gcc')
+  makedepends+=('mingw-w64-mingw32-binutils')
+else
+  makedepends+=('mingw-w64-ucrt64-gcc')
+  makedepends+=('mingw-w64-ucrt64-binutils')
+fi
+_GIT_TAG="release-6_4"
+options=('!strip' '!buildflags')
+source=("git://sourceware.org/git/cygwin-apps/${_realname}.git#tag=${_GIT_TAG}")
+sha256sums=('69743b1ad7e6046d95a04b9aa565e3216a570dae5ff48e615f96a08781b56aa0')
+msys2_references=(
+  'cygwin: windows-default-manifest'
+)
+
+prepare() {
+  cd ${srcdir}/${_realname}
+
+  autoreconf -fiv
+}
+
+_build() {
+  _target=$1
+  export MSYSTEM=CYGWIN
+
+  [[ -d ${srcdir}/build-${_target} ]] && rm -rf build-${_target}
+  cp -rf ${srcdir}/${_realname} ${srcdir}/build-${_target}
+  cd ${srcdir}/build-${_target}
+  ./configure \
+    --build=${CHOST} \
+    --host=${_target} \
+    --prefix=/usr/${_target}
+  make
+}
+
+_package() {
+  _target=$1
+  cd ${srcdir}/build-${_target}
+  make DESTDIR=${pkgdir} install
+}
+
+build() {
+  for _pkg in "${_targetpkgs[@]}"; do
+    case "$_pkg" in
+      "${_mingw_suff}-ucrt64-${_realname}") _build "x86_64-w64-mingw32" ;;
+      "${_mingw_suff}-mingw32-${_realname}") _build "i686-w64-mingw32" ;;
+    esac
+  done
+}
+
+#package_mingw-w64-windows-default-manifest() {
+  #pkgdesc+=" (meta package, for backward compatibility)"
+  #depends=("${_targetpkgs[@]}")
+#}
+
+package_mingw-w64-ucrt64-windows-default-manifest() {
+  conflicts=("${_mingw_suff}-${_realname}<=6.4-4")
+  _package "x86_64-w64-mingw32"
+}
+
+package_mingw-w64-mingw32-windows-default-manifest() {
+  conflicts=("${_mingw_suff}-${_realname}<=6.4-4")
+  _package "i686-w64-mingw32"
+}
