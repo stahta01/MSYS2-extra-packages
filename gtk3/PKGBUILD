@@ -4,7 +4,7 @@ _realname=gtk3
 pkgbase=${_realname}
 pkgname=("${_realname}" "gtk-update-icon-cache")
 pkgver=3.24.49
-pkgrel=2
+pkgrel=3
 pkgdesc="GObject-based multi-platform GUI toolkit (v3)"
 arch=('i686' 'x86_64')
 url="https://www.gtk.org/"
@@ -71,6 +71,10 @@ prepare() {
   # https://gitlab.gnome.org/GNOME/gtk/-/merge_requests/5458
   apply_patch_with_msg \
     0005-meson-fix-linker-flags-pkgconfig.patch
+
+  # make the build think it is on Windows OS
+  sed -i "s|host_machine.system()|'windows'|" meson.build
+  sed -i "s|host_machine.system()|'windows'|" gtk/meson.build
 }
 
 build() {
@@ -90,7 +94,11 @@ build() {
   CFLAGS+=" -DG_ENABLE_DEBUG"  # so the GTK_DEBUG env var works
   CFLAGS+=" -Wno-deprecated-declarations"
 
-  MSYS2_ARG_CONV_EXCL="--prefix=" \
+  export CC="/usr/bin/${MSYSTEM_CARCH}-w64-mingw32-gcc"
+  export CXX="/usr/bin/${MSYSTEM_CARCH}-w64-mingw32-g++"
+  export LD="/usr/bin/${MSYSTEM_CARCH}-w64-mingw32-ld"
+  export RC="/usr/bin/${MSYSTEM_CARCH}-w64-mingw32-windres"
+
   ${MSYSTEM_PREFIX}/bin/meson setup --wipe \
     --prefix="${MSYSTEM_PREFIX}" \
     --wrap-mode=nodownload \
