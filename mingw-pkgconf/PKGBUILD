@@ -1,0 +1,92 @@
+# Contributor: Ilya Rakhlin <i.rakhlin@gmail.com>
+
+_realname=pkgconf
+_mingw_suff=mingw-w64
+pkgbase="${_mingw_suff}-${_realname}"
+_targetpkgs=("${_mingw_suff}-ucrt64-${_realname}" "${_mingw_suff}-mingw32-${_realname}")
+pkgname=("${_targetpkgs[@]}")
+epoch=1
+pkgver=2.5.1
+pkgrel=1
+pkgdesc='pkg-config compatible utility which does not depend on glib'
+arch=('i686' 'x86_64')
+url='https://github.com/pkgconf/pkgconf'
+msys2_repository_url='https://github.com/pkgconf/pkgconf'
+msys2_references=(
+  "archlinux: pkgconf"
+  "cpe: cpe:/a:pkgconf:pkgconf"
+)
+license=('spdx:ISC')
+#provides=("pkg-config")
+#conflicts=("pkg-config")
+#replaces=("pkg-config")
+makedepends=("meson")
+if [[ "${CARCH}" == 'i686' ]]; then
+  makedepends+=('mingw-w64-mingw32-gcc')
+else
+  makedepends+=('mingw-w64-ucrt64-gcc')
+fi
+groups=("toolchain")
+source=("https://github.com/pkgconf/pkgconf/archive/pkgconf-$pkgver/$_realname-$pkgver.tar.gz")
+sha256sums=('79721badcad1987dead9c3609eb4877ab9b58821c06bdacb824f2c8897c11f2a')
+
+prepare() {
+  mv "${_realname}-${_realname}-${pkgver}" "${_realname}-${pkgver}"
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  # make the build think it is on Windows OS
+  sed -i "s|host_machine.system()|'windows'|" meson.build
+}
+
+build() {
+  for _pkg in "${_targetpkgs[@]}"; do
+    case "$_pkg" in
+      "${_mingw_suff}-ucrt64-${_realname}") _build "x86_64-w64-mingw32" ;;
+      "${_mingw_suff}-mingw32-${_realname}") _build "i686-w64-mingw32" ;;
+    esac
+  done
+}
+
+_build() {
+  _target=$1
+  mkdir -p ${srcdir}/build-${MSYSTEM_CARCH}-${_target} && cd ${srcdir}/build-${MSYSTEM_CARCH}-${_target}
+
+  declare -a _extra_config
+  if check_option "debug" "n"; then
+    _extra_config+=("--buildtype=release")
+  else
+    _extra_config+=("--buildtype=debug")
+  fi
+
+  export CC="/usr/bin/${MSYSTEM_CARCH}-w64-mingw32-gcc"
+  export CXX="/usr/bin/${MSYSTEM_CARCH}-w64-mingw32-g++"
+  export LD="/usr/bin/${MSYSTEM_CARCH}-w64-mingw32-ld"
+  export RC="/usr/bin/${MSYSTEM_CARCH}-w64-mingw32-windres"
+
+  ${MSYSTEM_PREFIX}/bin/meson setup \
+    --prefix="${MSYSTEM_PREFIX}/${_target}" \
+    "${_extra_config[@]}" \
+    -Dtests=disabled \
+    ../${_realname}-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/meson compile
+}
+
+_package() {
+  _target=$1
+  cd ${srcdir}/build-${MSYSTEM_CARCH}-${_target}
+
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/meson install
+
+  mkdir -p "${pkgdir}${MSYSTEM_PREFIX}"/bin
+  cp "${pkgdir}${MSYSTEM_PREFIX}/${_target}"/bin/pkgconf "${pkgdir}${MSYSTEM_PREFIX}"/bin/${_target}-pkgconf
+}
+
+package_mingw-w64-ucrt64-pkgconf() {
+  _package "x86_64-w64-mingw32"
+}
+
+package_mingw-w64-mingw32-pkgconf() {
+  _package "i686-w64-mingw32"
+}
+
