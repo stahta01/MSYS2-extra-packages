@@ -4,7 +4,7 @@ _realname=gtk3
 pkgbase=${_realname}
 pkgname=("${_realname}" "gtk-update-icon-cache")
 pkgver=3.24.49
-pkgrel=2
+pkgrel=3
 pkgdesc="GObject-based multi-platform GUI toolkit (v3)"
 arch=('i686' 'x86_64')
 url="https://www.gtk.org/"
@@ -90,7 +90,6 @@ build() {
   CFLAGS+=" -DG_ENABLE_DEBUG"  # so the GTK_DEBUG env var works
   CFLAGS+=" -Wno-deprecated-declarations"
 
-  MSYS2_ARG_CONV_EXCL="--prefix=" \
   ${MSYSTEM_PREFIX}/bin/meson setup --wipe \
     --prefix="${MSYSTEM_PREFIX}" \
     --wrap-mode=nodownload \
