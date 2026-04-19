@@ -6,10 +6,8 @@
 _realname=hunspell
 pkgbase=${_realname}
 pkgname="${_realname}"
-# Please rebuild enchant when updating this if needed, otherwise it may
-# silently break spell checking in applications
 pkgver=1.7.2
-pkgrel=4
+pkgrel=5
 pkgdesc="Spell checker and morphological analyzer library and program"
 arch=('i686' 'x86_64')
 url="https://hunspell.github.io/"
@@ -41,7 +39,7 @@ sha256sums=('69fa312d3586c988789266eaf7ffc9861d9f6396c31fc930a014d551b59bbd6e'
 
 prepare() {
   cd "${srcdir}"
-  tar zxf ${_realname}-${pkgver}.tar.gz || true
+  tar zxf ${_realname}-${pkgver}.tar.gz || tar zxf ${_realname}-${pkgver}.tar.gz || true
 
   #test ! -d "${startdir}/../mingw-w64-pathtools" || {
     #cmp "${startdir}/../mingw-w64-pathtools/pathtools.c" "${srcdir}/pathtools.c" &&
@@ -53,7 +51,7 @@ prepare() {
   cp -fHv "${srcdir}"/pathtools.h src/tools/
 
   cp -Rp README.md README
-  patch -Np1 -i "${srcdir}"/01-relocate.patch
+  #patch -Np1 -i "${srcdir}"/01-relocate.patch
   #patch -Np1 -i "${srcdir}"/02-fix-link-with-pdcurses.patch
   autoreconf -fi
 }
@@ -75,7 +73,6 @@ build() {
     --with-ui \
     --with-readline
 
-  #MSYS2_ARG_CONV_EXCL="-DBINDIR=;-DDATA_DIR=" \
   make
 }
 
@@ -86,7 +83,7 @@ check() {
 
 package() {
   cd "${srcdir}/build-${MSYSTEM_CARCH}"
-  #MSYS2_ARG_CONV_EXCL="-DBINDIR=;-DDATA_DIR=" \
+
   make DESTDIR="${pkgdir}" install
   cp "${pkgdir}"${MSYSTEM_PREFIX}/lib/lib${_realname}-${pkgver%.*}.dll.a "${pkgdir}"${MSYSTEM_PREFIX}/lib/lib${_realname}.dll.a
 
