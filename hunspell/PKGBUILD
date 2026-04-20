@@ -41,11 +41,6 @@ prepare() {
   cd "${srcdir}"
   tar zxf ${_realname}-${pkgver}.tar.gz || tar zxf ${_realname}-${pkgver}.tar.gz || true
 
-  #test ! -d "${startdir}/../mingw-w64-pathtools" || {
-    #cmp "${startdir}/../mingw-w64-pathtools/pathtools.c" "${srcdir}/pathtools.c" &&
-    #cmp "${startdir}/../mingw-w64-pathtools/pathtools.h" "${srcdir}/pathtools.h"
-  #} || exit 1
-
   cd "${srcdir}/${_realname}-${pkgver}"
   cp -fHv "${srcdir}"/pathtools.c src/tools/pathtools.cxx
   cp -fHv "${srcdir}"/pathtools.h src/tools/
