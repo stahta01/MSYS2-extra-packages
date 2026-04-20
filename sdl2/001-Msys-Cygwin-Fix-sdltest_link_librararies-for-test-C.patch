@@ -1,0 +1,30 @@
+From 6d6f85c238f308450d4ccd5a81f11facefb72e8b Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sat, 18 Jul 2026 20:13:59 -0400
+Subject: Msys/Cygwin: Fix sdltest_link_librararies for test/CMakeLists.txt
+
+---
+ test/CMakeLists.txt | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index 288645d73..abbe61cfe 100644
+--- a/test/CMakeLists.txt
++++ b/test/CMakeLists.txt
+@@ -252,8 +252,12 @@ endif()
+ 
+ if(WINDOWS)
+     # mingw32 must come before SDL2main to link successfully
+-    if(MINGW OR CYGWIN)
++    if(MINGW)
+         sdltest_link_librararies(mingw32)
++    elseif(MSYS)
++        sdltest_link_librararies(msys-2.0)
++    elseif(CYGWIN)
++        sdltest_link_librararies(cygwin)
+     endif()
+ 
+     # CET support was added in VS 16.7
+-- 
+2.53.0.windows.2
+

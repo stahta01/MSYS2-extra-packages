@@ -1,22 +1,36 @@
+# contributer: Alexey Pavlov <alexpux@gmail.com>
+# contributer: Zach Bacon <zachbacon@budgiemedia.rocks>
+
+_realname=SDL2
 pkgname=sdl2
-pkgver=2.30.8
-pkgrel=2
+pkgver=2.32.10
+pkgrel=1
 pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 2)"
 arch=('i686' 'x86_64')
 url="https://www.libsdl.org"
 license=('Zlib')
 depends=()
 makedepends=('cmake' 'ninja' 'autotools' 'gcc')
-source=("https://github.com/libsdl-org/SDL/releases/download/release-${pkgver}/SDL2-${pkgver}.tar.gz"{,.sig})
-sha512sums=('72e49d8a67f5ca1241a262e7e7ae7f6ff148e8774343110db652589ab2e72d3425534ca7f8c7825b2ae1afc779c09228da33a9586219ac4e53546a4930380b64'
-            'SKIP')
+source=("https://github.com/libsdl-org/SDL/releases/download/release-${pkgver}/SDL2-${pkgver}.tar.gz"{,.sig}
+        '001-Msys-Cygwin-Fix-sdltest_link_librararies-for-test-C.patch'
+        '002-Msys-Cygwin-Add-__CYGWIN__-guards.patch'
+        '003-Msys-Cygwin-Add-to-SDL_LIBS.patch'
+        '004-Add-CYGWIN-cmake-guards.patch')
+sha512sums=('b67ebdb46bc3b41c974113937e15445e47a6e115692761e2812c3965e85b9ca4d804633de6369fa3dd36cc77f5d08655570c1707245b2c46f88114aa3238fd1b'
+            'SKIP'
+            '83cdd50877103f830221d0476aabe240c8a0bdcfcf8c0f200b007f4d892065b66e41b53da0c804090d0643ad86e9e6aafafc9ba0fd7fd594ea297bef5c46ccaa'
+            '5b3f3fa7d9df61e3e52c88725f4a435d9ce9ca02874cec74c8165b3b20a1b79071a798384a82f30736059821c5f1576902d2fc3ee3dd29665166c031ed373942'
+            'a810a42ee607cea8fb97c318c30b7f35728e4961b472cec2f1fe2ed888c2f12f3166cf2999d55d8f179f0fb30c5f487d5dff82166706b20e8ab16699f5fd8d50'
+            'f60b44ac835755fb540bd244febe22111ae228b95d9399c00bdae99ddb90cf87d577ce960f4ebb5430a17db659b16242e527a2ec67dca3ae11d006bf2623ef7b')
 validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
 
 prepare() {
   cd SDL2-${pkgver}
 
-  sed -i 's/lcygwin/lmsys-2.0/' configure.ac
-  sed -i 's/lcygwin/lmsys-2.0/' configure
+  patch -p1 -i "${srcdir}"/001-Msys-Cygwin-Fix-sdltest_link_librararies-for-test-C.patch
+  patch -p1 -i "${srcdir}"/002-Msys-Cygwin-Add-__CYGWIN__-guards.patch
+  patch -p1 -i "${srcdir}"/003-Msys-Cygwin-Add-to-SDL_LIBS.patch
+  patch -p1 -i "${srcdir}"/004-Add-CYGWIN-cmake-guards.patch
 }
 
 build() {
@@ -24,24 +38,30 @@ build() {
   mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}"
   cd "${srcdir}/build-${MSYSTEM_CARCH}"
 
-  local CYGWIN_CHOST="${CHOST/-msys/-cygwin}"
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --fresh \
+    -GNinja \
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DSDL_VULKAN=ON \
+    -DSDL_TESTS=ON \
+    ../${_realname}-${pkgver}
 
-  ../SDL2-${pkgver}/configure \
-    --prefix=${MSYSTEM_PREFIX} \
-    --build=${CYGWIN_CHOST} \
-    --disable-assembly \
-    --enable-shared \
-    --enable-static
+  ${MSYSTEM_PREFIX}/bin/cmake --build .
+}
 
-  make
+check(){
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ctest -VV
 }
 
 package() {
   cd "${srcdir}/build-${MSYSTEM_CARCH}"
-  DESTDIR="${pkgdir}" make install
 
-  # For some reason, this isn't named correctly and we have to fix it to reflect the actual staticlib name.
-  #sed -i "s/libSDL2\.a/libSDL2main.a/g" "$pkgdir"/usr/lib/cmake/SDL2/SDL2Targets-noconfig.cmake
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake --install .
+
+  cp sdl2-config "$pkgdir${MSYSTEM_PREFIX}/bin"
+  cp libSDL2-2.0.dll.a "$pkgdir${MSYSTEM_PREFIX}/lib/libSDL2.dll.a"
 
   install -Dm644 ../SDL2-${pkgver}/LICENSE.txt "$pkgdir${MSYSTEM_PREFIX}/share/licenses/$pkgname/LICENSE"
 }

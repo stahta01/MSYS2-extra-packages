@@ -1,0 +1,126 @@
+From 1f3dd498914caeffc49c080d000d5ce789435bfe Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sat, 18 Jul 2026 19:04:47 -0400
+Subject: Msys/Cygwin: Add __CYGWIN__ guards
+
+---
+ include/SDL_config.h.cmake    | 2 +-
+ include/SDL_config.h.in       | 2 +-
+ include/SDL_thread.h          | 4 ++--
+ src/dynapi/SDL_dynapi_procs.h | 4 ++--
+ src/stdlib/SDL_getenv.c       | 8 ++++----
+ 5 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/include/SDL_config.h.cmake b/include/SDL_config.h.cmake
+index dbee3c7bc..e241b7016 100644
+--- a/include/SDL_config.h.cmake
++++ b/include/SDL_config.h.cmake
+@@ -83,7 +83,7 @@
+ #cmakedefine HAVE_REALLOC 1
+ #cmakedefine HAVE_FREE 1
+ #cmakedefine HAVE_ALLOCA 1
+-#ifndef __WIN32__ /* Don't use C runtime versions of these on Windows */
++#if !(defined(__WIN32__) && !defined(__CYGWIN__)) /* Don't use C runtime versions of these on Windows */
+ #cmakedefine HAVE_GETENV 1
+ #cmakedefine HAVE_SETENV 1
+ #cmakedefine HAVE_PUTENV 1
+diff --git a/include/SDL_config.h.in b/include/SDL_config.h.in
+index d28c69674..c7027a2ea 100644
+--- a/include/SDL_config.h.in
++++ b/include/SDL_config.h.in
+@@ -86,7 +86,7 @@
+ #undef HAVE_REALLOC
+ #undef HAVE_FREE
+ #undef HAVE_ALLOCA
+-#ifndef __WIN32__ /* Don't use C runtime versions of these on Windows */
++#if !(defined(__WIN32__) && !defined(__CYGWIN__)) /* Don't use C runtime versions of these on Windows */
+ #undef HAVE_GETENV
+ #undef HAVE_SETENV
+ #undef HAVE_PUTENV
+diff --git a/include/SDL_thread.h b/include/SDL_thread.h
+index db67cd155..352c43dc8 100644
+--- a/include/SDL_thread.h
++++ b/include/SDL_thread.h
+@@ -35,7 +35,7 @@
+ #include "SDL_atomic.h"
+ #include "SDL_mutex.h"
+ 
+-#if (defined(__WIN32__) || defined(__GDK__)) && !defined(__WINRT__)
++#if (defined(__WIN32__) || defined(__GDK__)) && !defined(__WINRT__) && !defined(__CYGWIN__)
+ #include <process.h> /* _beginthreadex() and _endthreadex() */
+ #endif
+ #if defined(__OS2__) /* for _beginthread() and _endthread() */
+@@ -90,7 +90,7 @@ typedef enum SDL_ThreadPriority {
+ typedef int (SDLCALL * SDL_ThreadFunction) (void *data);
+ 
+ 
+-#if (defined(__WIN32__) || defined(__GDK__)) && !defined(__WINRT__)
++#if (defined(__WIN32__) || defined(__GDK__)) && !defined(__WINRT__) && !defined(__CYGWIN__)
+ /**
+  *  \file SDL_thread.h
+  *
+diff --git a/src/dynapi/SDL_dynapi_procs.h b/src/dynapi/SDL_dynapi_procs.h
+index 82e224e31..2e81d9b84 100644
+--- a/src/dynapi/SDL_dynapi_procs.h
++++ b/src/dynapi/SDL_dynapi_procs.h
+@@ -48,7 +48,7 @@ SDL_DYNAPI_PROC(int,SDL_snprintf,(SDL_OUT_Z_CAP(b) char *a, size_t b, SDL_PRINTF
+ #undef SDL_CreateThread
+ #endif
+ 
+-#if defined(__WIN32__) || defined(__GDK__)
++#if defined(__WIN32__) && !defined(__CYGWIN__) || defined(__GDK__)
+ SDL_DYNAPI_PROC(SDL_Thread*,SDL_CreateThread,(SDL_ThreadFunction a, const char *b, void *c, pfnSDL_CurrentBeginThread d, pfnSDL_CurrentEndThread e),(a,b,c,d,e),return)
+ #elif defined(__OS2__)
+ SDL_DYNAPI_PROC(SDL_Thread*,SDL_CreateThread,(SDL_ThreadFunction a, const char *b, void *c, pfnSDL_CurrentBeginThread d, pfnSDL_CurrentEndThread e),(a,b,c,d,e),return)
+@@ -747,7 +747,7 @@ SDL_DYNAPI_PROC(SDL_bool,SDL_HasColorKey,(SDL_Surface *a),(a),return)
+ #undef SDL_CreateThreadWithStackSize
+ #endif
+ 
+-#if defined(__WIN32__) || defined(__GDK__)
++#if defined(__WIN32__) && !defined(__CYGWIN__) || defined(__GDK__)
+ SDL_DYNAPI_PROC(SDL_Thread*,SDL_CreateThreadWithStackSize,(SDL_ThreadFunction a, const char *b, const size_t c, void *d, pfnSDL_CurrentBeginThread e, pfnSDL_CurrentEndThread f),(a,b,c,d,e,f),return)
+ #elif defined(__OS2__)
+ SDL_DYNAPI_PROC(SDL_Thread*,SDL_CreateThreadWithStackSize,(SDL_ThreadFunction a, const char *b, const size_t c, void *d, pfnSDL_CurrentBeginThread e, pfnSDL_CurrentEndThread f),(a,b,c,d,e,f),return)
+diff --git a/src/stdlib/SDL_getenv.c b/src/stdlib/SDL_getenv.c
+index 5fbd4a09f..fdd471a7b 100644
+--- a/src/stdlib/SDL_getenv.c
++++ b/src/stdlib/SDL_getenv.c
+@@ -25,7 +25,7 @@
+ 
+ #include "../SDL_internal.h"
+ 
+-#if defined(__WIN32__) || defined(__WINGDK__)
++#if defined(__WIN32__) && !defined(__CYGWIN__) || defined(__WINGDK__)
+ #include "../core/windows/SDL_windows.h"
+ #endif
+ 
+@@ -35,7 +35,7 @@
+ 
+ #include "SDL_stdinc.h"
+ 
+-#if (defined(__WIN32__) || defined(__WINGDK__)) && (!defined(HAVE_SETENV) || !defined(HAVE_GETENV))
++#if (defined(__WIN32__) && !defined(__CYGWIN__) || defined(__WINGDK__)) && (!defined(HAVE_SETENV) || !defined(HAVE_GETENV))
+ /* Note this isn't thread-safe! */
+ static char *SDL_envmem = NULL; /* Ugh, memory leak */
+ static size_t SDL_envmemlen = 0;
+@@ -53,7 +53,7 @@ int SDL_setenv(const char *name, const char *value, int overwrite)
+ 
+     return setenv(name, value, overwrite);
+ }
+-#elif defined(__WIN32__) || defined(__WINGDK__)
++#elif defined(__WIN32__) && !defined(__CYGWIN__) || defined(__WINGDK__)
+ int SDL_setenv(const char *name, const char *value, int overwrite)
+ {
+     /* Input validation */
+@@ -182,7 +182,7 @@ char *SDL_getenv(const char *name)
+ 
+     return getenv(name);
+ }
+-#elif defined(__WIN32__) || defined(__WINGDK__)
++#elif defined(__WIN32__) && !defined(__CYGWIN__) || defined(__WINGDK__)
+ char *SDL_getenv(const char *name)
+ {
+     size_t bufferlen;
+-- 
+2.53.0.windows.2
+

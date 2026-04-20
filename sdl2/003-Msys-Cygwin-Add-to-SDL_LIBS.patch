@@ -1,0 +1,31 @@
+From 565e5df87e8c259a32e29aa008d6455263909bbd Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Tue, 28 Apr 2026 02:05:10 -0400
+Subject: Msys/Cygwin: Add to SDL_LIBS
+
+---
+ CMakeLists.txt | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 143070d21..ddf8bd71f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2096,7 +2096,13 @@ elseif(WINDOWS)
+       list(APPEND SDL_CFLAGS "-Dmain=SDL_main")
+       list(INSERT SDL_LIBS 0 "-lSDL2main")
+     endif(NOT SDL2_DISABLE_SDL2MAIN)
+-    list(INSERT SDL_LIBS 0 "-lmingw32" "-mwindows")
++    if(MSYS)
++      list(INSERT SDL_LIBS 0 "-lmsys-2.0" "-mwindows")
++    elseif(CYGWIN)
++      list(INSERT SDL_LIBS 0 "-lcygwin" "-mwindows")
++    else()
++      list(INSERT SDL_LIBS 0 "-lmingw32" "-mwindows")
++    endif()
+   endif()
+ 
+ elseif(APPLE)
+-- 
+2.53.0.windows.2
+
