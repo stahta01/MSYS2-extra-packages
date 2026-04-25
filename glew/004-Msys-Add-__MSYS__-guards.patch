@@ -1,0 +1,39 @@
+From b2114edbb085f5cfc64da0bac499d1ee4167b6cc Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 3 Aug 2026 18:52:43 -0400
+Subject: Msys: Add __MSYS__ guards
+
+---
+ src/glew.c     | 2 +-
+ src/glewinfo.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/glew.c b/src/glew.c
+index 56b8aac..a2cf20e 100644
+--- a/src/glew.c
++++ b/src/glew.c
+@@ -59,7 +59,7 @@
+ #    undef NOGDI
+ #  endif
+ #  include <GL/wglew.h>
+-#elif !defined(__ANDROID__) && !defined(__native_client__) && !defined(__HAIKU__) && (!defined(__APPLE__) || defined(GLEW_APPLE_GLX))
++#elif !defined(__ANDROID__) && !defined(__native_client__) && !defined(__HAIKU__) && !defined(__MSYS__) && (!defined(__APPLE__) || defined(GLEW_APPLE_GLX))
+ #  include <GL/glxew.h>
+ #endif
+ 
+diff --git a/src/glewinfo.c b/src/glewinfo.c
+index a32b90b..2c6439a 100644
+--- a/src/glewinfo.c
++++ b/src/glewinfo.c
+@@ -46,7 +46,7 @@
+ #include <GL/osmesa.h>
+ #elif defined(_WIN32)
+ #include <GL/wglew.h>
+-#elif !defined(__APPLE__) && !defined(__HAIKU__) || defined(GLEW_APPLE_GLX)
++#elif !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__MSYS__) || defined(GLEW_APPLE_GLX)
+ #include <GL/glxew.h>
+ #endif
+ 
+-- 
+2.53.0.windows.2
+

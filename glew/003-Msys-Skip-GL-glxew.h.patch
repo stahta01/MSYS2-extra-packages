@@ -1,0 +1,25 @@
+From d5fc56b167444a6ada24fb4539097fb604b5533b Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 3 Aug 2026 18:44:28 -0400
+Subject: Msys: Skip GL/glxew.h
+
+---
+ build/cmake/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/build/cmake/CMakeLists.txt b/build/cmake/CMakeLists.txt
+index 3cccf2d..95bebb3 100644
+--- a/build/cmake/CMakeLists.txt
++++ b/build/cmake/CMakeLists.txt
+@@ -102,7 +102,7 @@ include_directories (${GLEW_DIR}/include ${X11_INCLUDE_DIR})
+ set (GLEW_PUBLIC_HEADERS_FILES
+   ${GLEW_DIR}/include/GL/wglew.h
+   ${GLEW_DIR}/include/GL/glew.h
+-  ${GLEW_DIR}/include/GL/glxew.h
++  #${GLEW_DIR}/include/GL/glxew.h
+   ${GLEW_DIR}/include/GL/eglew.h
+ )
+ set (GLEW_SRC_FILES ${GLEW_DIR}/src/glew.c)
+-- 
+2.53.0.windows.2
+
