@@ -1,0 +1,78 @@
+# Contributor: Martell Malone <martell malone at gmail dot com>
+
+_realname=glew
+pkgbase=${_realname}
+pkgname="${_realname}"
+pkgver=2.3.1
+pkgrel=1
+arch=('any')
+pkgdesc="GLEW, The OpenGL Extension Wrangler Library"
+depends=()
+makedepends=("cmake"
+             "gcc")
+license=('Modified BSD/MIT/GPL')
+url="https://glew.sourceforge.io/"
+msys2_repository_url='https://github.com/nigels-com/glew'
+source=("https://sourceforge.net/projects/glew/files/glew/${pkgver}/${_realname}-${pkgver}.tgz"
+        '002-Msys-Skip-X11.patch'
+        '003-Msys-Skip-GL-glxew.h.patch'
+        '004-Msys-Add-__MSYS__-guards.patch'
+        '005-Msys-Add-Msys-code.patch'
+        '006-Msys-Add-__MSYS__-guard.patch')
+sha256sums=('b64790f94b926acd7e8f84c5d6000a86cb43967bd1e688b03089079799c9e889'
+            '05342a43387fbe177bf1d595516e321c61673c19eb6dd5363b0d8dd72be85241'
+            '81521d13b16de5d0ce75c7d910d876f37fb7e8d2a149ca05f58d40de402ddce7'
+            '75383405d87ddc077a4bf0c40d155553daf9d3e77d62f87926795bb2caa88d94'
+            '932d77736b75ea3e39ea49596ebe43b7f641bbf537ccab715acb6510cee0fa97'
+            'acec260241eca8cbc4744d8e028eeca5b50556a90cf83bd2bb22cccb03eb6ea8')
+
+prepare() {
+  cd "${srcdir}/${_realname}-${pkgver}"
+
+  patch -p1 -i "${srcdir}"/002-Msys-Skip-X11.patch
+  patch -p1 -i "${srcdir}"/003-Msys-Skip-GL-glxew.h.patch
+  patch -p1 -i "${srcdir}"/004-Msys-Add-__MSYS__-guards.patch
+  patch -p1 -i "${srcdir}"/005-Msys-Add-Msys-code.patch
+  patch -p1 -i "${srcdir}"/006-Msys-Add-__MSYS__-guard.patch
+}
+
+build() {
+  mkdir -p "${srcdir}"/build-${MSYSTEM_CARCH} && cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ${MSYSTEM_PREFIX}/bin/cmake \
+      -G"Unix Makefiles" \
+      -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+      -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+      -DGLEW_X11=NO \
+      ../${_realname}-${pkgver}/build/cmake
+
+  make
+}
+
+package () {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+  make DESTDIR="${pkgdir}" install
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/lib/pkgconfig
+  sed \
+    -e "s|@prefix@|${MSYSTEM_PREFIX}|g" \
+    -e "s|@libdir@|${MSYSTEM_PREFIX}/lib|g" \
+    -e "s|@exec_prefix@|${MSYSTEM_PREFIX}/bin|g" \
+    -e "s|@includedir@|${MSYSTEM_PREFIX}/include|g" \
+    -e "s|@version@|${pkgver}|g" \
+    -e "s|@cflags@||g" \
+    -e "s|@libname@|glew32|g" \
+    -e "s|@libgl@||g" \
+    -e "s|@requireslib@||g" \
+    "${srcdir}"/${_realname}-${pkgver}/glew.pc.in \
+    > "${pkgdir}"${MSYSTEM_PREFIX}/lib/pkgconfig/glew.pc
+  # For building a static library or executable on Windows.
+  # For more info see https://glew.sourceforge.net/install.html.
+  echo "Cflags.private: -DGLEW_STATIC" \
+    >> "${pkgdir}"${MSYSTEM_PREFIX}/lib/pkgconfig/glew.pc
+
+  mkdir -p "${pkgdir}"${MSYSTEM_PREFIX}/share/doc/${_realname}
+  cp -a "${srcdir}"/${_realname}-${pkgver}/doc "${pkgdir}"${MSYSTEM_PREFIX}/share/doc/${_realname}/html
+
+  install -Dm644 "${srcdir}"/${_realname}-${pkgver}/LICENSE.txt "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE
+}

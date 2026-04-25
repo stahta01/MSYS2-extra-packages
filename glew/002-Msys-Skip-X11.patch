@@ -1,0 +1,25 @@
+From f8fc12fb0377be521246e4314dd7363b0237fd8a Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 3 Aug 2026 18:39:07 -0400
+Subject: Msys: Skip X11
+
+---
+ build/cmake/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/build/cmake/CMakeLists.txt b/build/cmake/CMakeLists.txt
+index 5649972..3cccf2d 100644
+--- a/build/cmake/CMakeLists.txt
++++ b/build/cmake/CMakeLists.txt
+@@ -46,7 +46,7 @@ else ()
+ endif ()
+ 
+ # X11 required except for Windows and Apple OSX platforms
+-if (GLEW_X11 AND NOT WIN32 AND NOT APPLE)
++if (GLEW_X11 AND NOT WIN32 AND NOT APPLE AND NOT MSYS)
+   find_package (X11)
+   list (APPEND GLEW_LIBRARIES ${OPENGL_glx_LIBRARY} ${X11_LIBRARIES})
+ endif()
+-- 
+2.53.0.windows.2
+
