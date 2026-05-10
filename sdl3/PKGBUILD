@@ -1,0 +1,65 @@
+# contributer: Alexey Pavlov <alexpux@gmail.com>
+# contributer: Zach Bacon <zachbacon@budgiemedia.rocks>
+
+pkgname=sdl3
+pkgver=3.4.8
+pkgrel=1
+pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 2)"
+arch=('i686' 'x86_64')
+url="https://www.libsdl.org"
+license=('Zlib')
+depends=()
+makedepends=('cmake' 'ninja' 'autotools' 'gcc')
+source=("https://github.com/libsdl-org/SDL/releases/download/release-${pkgver}/SDL3-${pkgver}.tar.gz"{,.sig}
+        '001-Add-Cygwin-guards-to-SDL3-SDL_stdinc.h.patch'
+        '002-Add-or-edit-macros-to-reduce-warnings.patch'
+        '003-Edit-SDL_d3d12.h-to-enable-Cygwin-and-MSYS-features.patch'
+        '004-Fix-selected-CYGWIN-build-issues.patch'
+        '005-TEST-ONLY-Add-defined-__CYGWIN__-guards.patch'
+        '006-Add-support-for-MSYS.patch')
+sha512sums=('2fd6b0ecb46278e8c625fce85bd3e7e9813c0380c86fde3ccca4c8e608cfeb316c9c905ae471e8c881d651e3a73fce668e3b7709fb7912234e9de1588259e4a3'
+            'SKIP'
+            'e7e09d8db324c241141107a04714ec5374babc3523414a7f6f51e784a2099f64b7e74fba3889cc68ecac7e6fcf825480d8c3a8bc906b9536220c2cc1f51a3cb4'
+            'eef3e24ad738bc3fc0c7a40a2065c2062480c9742d55197147e857e9e181863736afb466476d0bed230554b1d2d360b2b8ac44d368bb8bc0bf862bb9af82c353'
+            'ebdae129672530c0ab7f591f6b5e18e3e4191a785210dc83641945b5a3ab61552eb971c277de9d951b34502df7efb08b64a1b524d1d8dc0d4ed19619ba96ba28'
+            '565ad7876e940b1cce70414eb1937fb6aecb98bb914d4fe8e8e70dbe3343be5ba02238a710903072dc68b9df54cc7ba0198bff89a56c9c726ffd2092a2173890'
+            'eeb418d415e45eac4764f883189cdafe20fd2d240c88b05be9ea80d190157db5bcb6c68de60de1726e4b194a8eb6347c8987aae6adc34e708f19fe980a4674c6'
+            '80ff257cb1be0454f131d9a0fccbefdca3d6357d893901e1049b38ed9d695904b0978f90e8f0fd9528d28d68c95a409c417b26f423a0480161b570b41f713c25')
+validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
+
+prepare() {
+  cd SDL3-${pkgver}
+
+  patch -p1 -i "${srcdir}"/001-Add-Cygwin-guards-to-SDL3-SDL_stdinc.h.patch
+  patch -p1 -i "${srcdir}"/002-Add-or-edit-macros-to-reduce-warnings.patch
+  patch -p1 -i "${srcdir}"/003-Edit-SDL_d3d12.h-to-enable-Cygwin-and-MSYS-features.patch
+  patch -p1 -i "${srcdir}"/004-Fix-selected-CYGWIN-build-issues.patch
+  patch -p1 -i "${srcdir}"/005-TEST-ONLY-Add-defined-__CYGWIN__-guards.patch
+  patch -p1 -i "${srcdir}"/006-Add-support-for-MSYS.patch
+}
+
+build() {
+  [[ -d "build-${MSYSTEM_CARCH}" ]] && rm -rf "build-${MSYSTEM_CARCH}"
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}"
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+    -GNinja \
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DSDL_CAMERA=NO \
+    -DSDL_DIALOG=NO \
+    ../SDL3-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake --build .
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake --install .
+
+  install -Dm644 ../SDL3-${pkgver}/LICENSE.txt "$pkgdir${MSYSTEM_PREFIX}/share/licenses/$pkgname/LICENSE"
+}
+
+# vim:set ts=2 sw=2 et:

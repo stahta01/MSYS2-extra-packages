@@ -1,0 +1,432 @@
+From edc10fe765df737096c3b8cbbf3e416a026e1644 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 10 May 2026 15:28:43 -0400
+Subject: Fix selected CYGWIN build issues.
+
+Many ideas are likely from PR 15457
+
+Co-authored-by: TrueCat17 <truecat17@gmail.com>
+Co-authored-by: Anonymous Maarten <anonymous.maarten@gmail.com>
+Co-authored-by: Ozkan Sezer <sezeroz@gmail.com>
+---
+ CMakeLists.txt                      | 33 +++++++++--------------------
+ cmake/macros.cmake                  |  2 +-
+ include/SDL3/SDL_platform_defines.h |  4 ++--
+ include/SDL3/SDL_thread.h           |  4 ++--
+ src/SDL.c                           |  2 +-
+ src/hidapi/SDL_hidapi.c             | 22 +++++++++----------
+ src/hidapi/windows/hid.c            |  2 +-
+ src/io/SDL_iostream.c               | 18 +++++++---------
+ src/io/SDL_iostream_c.h             |  2 +-
+ test/CMakeLists.txt                 |  2 +-
+ test/childprocess.c                 |  4 ++--
+ 11 files changed, 40 insertions(+), 55 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 88728957d..7a6f17f29 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -359,16 +359,16 @@ dep_option(SDL_WAYLAND_LIBDECOR_SHARED     "Dynamically load libdecor support" O
+ dep_option(SDL_RPI                 "Use Raspberry Pi video driver" ON "SDL_VIDEO;UNIX_SYS;SDL_CPU_ARM32 OR SDL_CPU_ARM64" OFF)
+ dep_option(SDL_ROCKCHIP            "Use ROCKCHIP Hardware Acceleration video driver" ON "SDL_VIDEO;UNIX_SYS;SDL_CPU_ARM32 OR SDL_CPU_ARM64" OFF)
+ dep_option(SDL_COCOA               "Use Cocoa video driver" ON "APPLE" OFF)
+-dep_option(SDL_DIRECTX             "Use DirectX for Windows audio/video" ON "SDL_AUDIO OR SDL_VIDEO;WINDOWS" OFF)
+-dep_option(SDL_XINPUT              "Use Xinput for Windows" ON "WINDOWS" OFF)
+-dep_option(SDL_WASAPI              "Use the Windows WASAPI audio driver" ON "WINDOWS;SDL_AUDIO" OFF)
++dep_option(SDL_DIRECTX             "Use DirectX for Windows audio/video" ON "SDL_AUDIO OR SDL_VIDEO;WINDOWS OR CYGWIN" OFF)
++dep_option(SDL_XINPUT              "Use Xinput for Windows" ON "WINDOWS OR CYGWIN" OFF)
++dep_option(SDL_WASAPI              "Use the Windows WASAPI audio driver" ON "WINDOWS OR CYGWIN;SDL_AUDIO" OFF)
+ dep_option(SDL_RENDER_D3D          "Enable the Direct3D 9 render driver" ON "SDL_RENDER;SDL_DIRECTX" OFF)
+ dep_option(SDL_RENDER_D3D11        "Enable the Direct3D 11 render driver" ON "SDL_RENDER;SDL_DIRECTX" OFF)
+ dep_option(SDL_RENDER_D3D12        "Enable the Direct3D 12 render driver" ON "SDL_RENDER;SDL_DIRECTX" OFF)
+ dep_option(SDL_RENDER_METAL        "Enable the Metal render driver" ON "SDL_RENDER;APPLE" OFF)
+ dep_option(SDL_RENDER_GPU          "Enable the SDL_GPU render driver" ON "SDL_RENDER;SDL_GPU" OFF)
+ dep_option(SDL_VIVANTE             "Use Vivante EGL video driver" ON "${UNIX_SYS};SDL_CPU_ARM32" OFF)
+-dep_option(SDL_VULKAN              "Enable Vulkan support" ON "SDL_VIDEO;ANDROID OR APPLE OR LINUX OR FREEBSD OR OPENBSD OR WINDOWS" OFF)
++dep_option(SDL_VULKAN              "Enable Vulkan support" ON "SDL_VIDEO;ANDROID OR APPLE OR LINUX OR FREEBSD OR OPENBSD OR WINDOWS OR CYGWIN" OFF)
+ dep_option(SDL_RENDER_VULKAN       "Enable the Vulkan render driver" ON "SDL_RENDER;SDL_VULKAN" OFF)
+ dep_option(SDL_METAL               "Enable Metal support" ON "APPLE" OFF)
+ set_option(SDL_OPENVR              "Use OpenVR video driver" OFF)
+@@ -530,19 +530,6 @@ else()
+   endif()
+ endif()
+ 
+-if(CYGWIN)
+-  # We build SDL on cygwin without the UNIX emulation layer
+-  sdl_include_directories(PUBLIC SYSTEM "/usr/include/mingw")
+-  cmake_push_check_state()
+-  string(APPEND CMAKE_REQUIRED_FLAGS " -mno-cygwin")
+-  check_c_source_compiles("int main(int argc, char **argv) { return 0; }"
+-    HAVE_GCC_NO_CYGWIN)
+-  cmake_pop_check_state()
+-  if(HAVE_GCC_NO_CYGWIN)
+-    sdl_shared_link_options("-mno-cygwin")
+-  endif()
+-endif()
+-
+ # General includes
+ sdl_compile_definitions(PRIVATE "USING_GENERATED_CONFIG_H")
+ sdl_include_directories(
+@@ -1095,7 +1082,7 @@ if(SDL_LIBC)
+     vsnprintf vsscanf
+     wcsnlen wcscmp wcsdup wcslcat wcslcpy wcslen wcsncmp wcsstr wcstol
+   )
+-  if(WINDOWS)
++  if(WINDOWS OR CYGWIN)
+     list(APPEND symbols_to_check
+       _copysign _fseeki64 _strrev _ui64toa _uitoa _ultoa _wcsdup
+     )
+@@ -1372,7 +1359,7 @@ if(SDL_CAMERA)
+   #endif()
+ endif()
+ 
+-if(UNIX OR APPLE)
++if((UNIX OR APPLE) AND (NOT CYGWIN))
+   # Relevant for Unix/Darwin only
+   set(DYNAPI_NEEDS_DLOPEN 1)
+   CheckDLOPEN()
+@@ -1771,7 +1758,7 @@ elseif(EMSCRIPTEN)
+   CheckPTHREAD()
+   CheckLibUnwind()
+ 
+-elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
++elseif(UNIX AND NOT (APPLE OR RISCOS OR HAIKU OR CYGWIN))
+ 
+   set(SDL_DISABLE_DLOPEN_NOTES TRUE)
+   if(SDL_DLOPEN_NOTES)
+@@ -2162,7 +2149,7 @@ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
+     set (HAVE_VSNPRINTF 0)
+     set (USE_POSIX_SPAWN 1)
+   endif()
+-elseif(WINDOWS)
++elseif(WINDOWS OR CYGWIN)
+   enable_language(CXX)
+   check_c_source_compiles("
+     #include <windows.h>
+@@ -2196,7 +2183,7 @@ elseif(WINDOWS)
+     if(DEFINED MSVC_VERSION AND NOT ${MSVC_VERSION} LESS 1700)
+         set(USE_WINSDK_DIRECTX TRUE)
+     endif()
+-    if(NOT MINGW AND NOT USE_WINSDK_DIRECTX)
++    if(NOT (MINGW OR CYGWIN) AND NOT USE_WINSDK_DIRECTX)
+       if("$ENV{DXSDK_DIR}" STREQUAL "")
+         message(FATAL_ERROR "DIRECTX requires the \$DXSDK_DIR environment variable to be set")
+       endif()
+@@ -2215,7 +2202,7 @@ elseif(WINDOWS)
+     cmake_pop_check_state()
+     if(HAVE_D3D9_H OR HAVE_D3D11_H OR HAVE_DDRAW_H OR HAVE_DSOUND_H OR HAVE_DINPUT_H)
+       set(HAVE_DIRECTX TRUE)
+-      if(NOT MINGW AND NOT USE_WINSDK_DIRECTX)
++      if(NOT (MINGW OR CYGWIN) AND NOT USE_WINSDK_DIRECTX)
+         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+           set(PROCESSOR_ARCH "x64")
+         else()
+diff --git a/cmake/macros.cmake b/cmake/macros.cmake
+index 038dd9896..9c024f586 100644
+--- a/cmake/macros.cmake
++++ b/cmake/macros.cmake
+@@ -409,7 +409,7 @@ function(SDL_PrintSummary)
+     message(STATUS "")
+   endif()
+ 
+-  if(UNIX AND NOT (ANDROID OR APPLE OR EMSCRIPTEN OR HAIKU OR RISCOS))
++  if(UNIX AND NOT (ANDROID OR APPLE OR EMSCRIPTEN OR HAIKU OR RISCOS OR DJGPP OR CYGWIN))
+     if(NOT (HAVE_X11 OR HAVE_WAYLAND))
+       if(NOT SDL_UNIX_CONSOLE_BUILD)
+         message(FATAL_ERROR
+diff --git a/include/SDL3/SDL_platform_defines.h b/include/SDL3/SDL_platform_defines.h
+index 79631491d..6ac850fec 100644
+--- a/include/SDL3/SDL_platform_defines.h
++++ b/include/SDL3/SDL_platform_defines.h
+@@ -317,7 +317,7 @@
+ #define SDL_PLATFORM_CYGWIN 1
+ #endif
+ 
+-#if (defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN)) && !defined(__NGAGE__)
++#if (defined(_WIN32) || defined(__CYGWIN__)) && !defined(__NGAGE__)
+ 
+ /**
+  * A preprocessor macro that is only defined if compiling for Windows.
+@@ -417,7 +417,7 @@
+ #define SDL_PLATFORM_WIN32 1
+ 
+ #endif
+-#endif /* defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN) */
++#endif /* (defined(_WIN32) || defined(__CYGWIN__)) && !defined(__NGAGE__) */
+ 
+ 
+ /* This is to support generic "any GDK" separate from a platform-specific GDK */
+diff --git a/include/SDL3/SDL_thread.h b/include/SDL3/SDL_thread.h
+index 1842c035f..9f6f8feae 100644
+--- a/include/SDL3/SDL_thread.h
++++ b/include/SDL3/SDL_thread.h
+@@ -48,7 +48,7 @@
+ /* Thread synchronization primitives */
+ #include <SDL3/SDL_atomic.h>
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #include <process.h> /* _beginthreadex() and _endthreadex() */
+ #endif
+ 
+@@ -296,7 +296,7 @@ extern SDL_DECLSPEC SDL_Thread * SDLCALL SDL_CreateThreadWithProperties(SDL_Prop
+ 
+ /* The real implementation, hidden from the wiki, so it can show this as real functions that don't have macro magic. */
+ #ifndef SDL_WIKI_DOCUMENTATION_SECTION
+-#  if defined(SDL_PLATFORM_WINDOWS)
++#  if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #    ifndef SDL_BeginThreadFunction
+ #      define SDL_BeginThreadFunction _beginthreadex
+ #    endif
+diff --git a/src/SDL.c b/src/SDL.c
+index b1a1a5635..f431a626b 100644
+--- a/src/SDL.c
++++ b/src/SDL.c
+@@ -714,7 +714,7 @@ void SDL_Quit(void)
+     SDL_DBus_Quit();
+ #endif
+ 
+-#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_ANDROID) && !defined(SDL_PLATFORM_EMSCRIPTEN) && !defined(SDL_PLATFORM_PRIVATE)
++#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_ANDROID) && !defined(SDL_PLATFORM_EMSCRIPTEN) && !defined(SDL_PLATFORM_PRIVATE) && !defined(__CYGWIN__)
+     SDL_Gtk_Quit();
+ #endif
+ 
+diff --git a/src/hidapi/SDL_hidapi.c b/src/hidapi/SDL_hidapi.c
+index 0dda4d4ba..12eefe22c 100644
+--- a/src/hidapi/SDL_hidapi.c
++++ b/src/hidapi/SDL_hidapi.c
+@@ -50,7 +50,7 @@ SDL_ELF_NOTE_DLOPEN(
+ )
+ #endif
+ 
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+ #include "../core/windows/SDL_windows.h"
+ #endif
+ 
+@@ -110,7 +110,7 @@ static struct
+     bool m_bCanGetNotifications;
+     Uint64 m_unLastDetect;
+ 
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+     SDL_ThreadID m_nThreadID;
+     WNDCLASSEXA m_wndClass;
+     HWND m_hwndMsg;
+@@ -130,7 +130,7 @@ static struct
+ #endif
+ } SDL_HIDAPI_discovery;
+ 
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+ struct _DEV_BROADCAST_HDR
+ {
+     DWORD dbch_size;
+@@ -176,7 +176,7 @@ static LRESULT CALLBACK ControllerWndProc(HWND hwnd, UINT message, WPARAM wParam
+ 
+     return DefWindowProc(hwnd, message, wParam, lParam);
+ }
+-#endif // defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#endif // defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+ 
+ #ifdef SDL_PLATFORM_MACOS
+ static void CallbackIOServiceFunc(void *context, io_iterator_t portIterator)
+@@ -239,7 +239,7 @@ static void HIDAPI_InitializeDiscovery(void)
+     SDL_HIDAPI_discovery.m_bCanGetNotifications = false;
+     SDL_HIDAPI_discovery.m_unLastDetect = 0;
+ 
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+     SDL_HIDAPI_discovery.m_nThreadID = SDL_GetCurrentThreadID();
+ 
+     SDL_zero(SDL_HIDAPI_discovery.m_wndClass);
+@@ -266,7 +266,7 @@ static void HIDAPI_InitializeDiscovery(void)
+         SDL_HIDAPI_discovery.m_hNotify = RegisterDeviceNotification(SDL_HIDAPI_discovery.m_hwndMsg, &devBroadcast, DEVICE_NOTIFY_WINDOW_HANDLE | DEVICE_NOTIFY_ALL_INTERFACE_CLASSES);
+         SDL_HIDAPI_discovery.m_bCanGetNotifications = (SDL_HIDAPI_discovery.m_hNotify != 0);
+     }
+-#endif // defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#endif // defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+ 
+ #ifdef SDL_PLATFORM_MACOS
+     SDL_HIDAPI_discovery.m_notificationPort = IONotificationPortCreate(kIOMainPortDefault);
+@@ -387,7 +387,7 @@ static void HIDAPI_UpdateDiscovery(void)
+         return;
+     }
+ 
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+     if (SDL_IsVideoThread()) {
+         // just let the usual SDL_PumpEvents loop dispatch these, fixing bug 2998. --ryan.
+     } else {
+@@ -402,7 +402,7 @@ static void HIDAPI_UpdateDiscovery(void)
+             }
+         }
+     }
+-#endif // defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#endif // defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+ 
+ #ifdef SDL_PLATFORM_MACOS
+     if (SDL_HIDAPI_discovery.m_notificationPort) {
+@@ -496,7 +496,7 @@ static void HIDAPI_ShutdownDiscovery(void)
+         return;
+     }
+ 
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+     if (SDL_HIDAPI_discovery.m_hNotify) {
+         UnregisterDeviceNotification(SDL_HIDAPI_discovery.m_hNotify);
+     }
+@@ -589,7 +589,7 @@ typedef struct PLATFORM_hid_device_ PLATFORM_hid_device;
+ #include "SDL_hidapi_netbsd.h"
+ #elif defined(SDL_PLATFORM_MACOS)
+ #include "SDL_hidapi_mac.h"
+-#elif defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK)
++#elif defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_WINGDK) || defined(SDL_PLATFORM_CYGWIN)
+ #include "SDL_hidapi_windows.h"
+ #elif defined(SDL_PLATFORM_ANDROID)
+ #include "SDL_hidapi_android.h"
+@@ -1075,7 +1075,7 @@ bool SDL_HIDAPI_ShouldIgnoreDevice(int bus, Uint16 vendor_id, Uint16 product_id,
+         if (vendor_id == USB_VENDOR_VALVE) {
+             // Ignore the mouse/keyboard interface on Steam Controllers
+             if (
+-#ifdef SDL_PLATFORM_WIN32
++#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_CYGWIN)
+                 // Check the usage page and usage on both USB and Bluetooth
+ #else
+                 // Only check the usage page and usage on USB
+diff --git a/src/hidapi/windows/hid.c b/src/hidapi/windows/hid.c
+index aa67a466d..e21ecb828 100644
+--- a/src/hidapi/windows/hid.c
++++ b/src/hidapi/windows/hid.c
+@@ -45,7 +45,7 @@ typedef LONG NTSTATUS;
+ #define _WIN32_WINNT_WIN8 0x0602
+ #endif
+ 
+-#ifdef __CYGWIN__
++#if defined(__CYGWIN__) && !defined(HIDAPI_USING_SDL_RUNTIME)
+ #include <ntdef.h>
+ #include <wctype.h>
+ #define _wcsdup wcsdup
+diff --git a/src/io/SDL_iostream.c b/src/io/SDL_iostream.c
+index 31c74ab50..d32c04b81 100644
+--- a/src/io/SDL_iostream.c
++++ b/src/io/SDL_iostream.c
+@@ -20,7 +20,7 @@
+ */
+ #include "SDL_internal.h"
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ #include "../core/windows/SDL_windows.h"
+ #else
+ #include <unistd.h>
+@@ -62,7 +62,7 @@ struct SDL_IOStream
+ #include "../core/android/SDL_android.h"
+ #endif
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ 
+ typedef struct IOStreamWindowsData
+ {
+@@ -369,9 +369,7 @@ SDL_IOStream *SDL_IOFromHandle(HANDLE handle, const char *mode, bool autoclose)
+ 
+     return iostr;
+ }
+-#endif // defined(SDL_PLATFORM_WINDOWS)
+-
+-#if !defined(SDL_PLATFORM_WINDOWS)
++#else
+ 
+ // Functions to read/write file descriptors. Not used for windows.
+ 
+@@ -563,9 +561,9 @@ SDL_IOStream *SDL_IOFromFD(int fd, bool autoclose)
+ 
+     return iostr;
+ }
+-#endif // !defined(SDL_PLATFORM_WINDOWS)
++#endif // defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ 
+-#if defined(HAVE_STDIO_H) && !defined(SDL_PLATFORM_WINDOWS)
++#if defined(HAVE_STDIO_H) && !(defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN))
+ 
+ // Functions to read/write stdio file pointers. Not used for windows.
+ 
+@@ -762,7 +760,7 @@ SDL_IOStream *SDL_IOFromFP(FILE *fp, bool autoclose)
+ 
+     return iostr;
+ }
+-#endif // !HAVE_STDIO_H && !defined(SDL_PLATFORM_WINDOWS)
++#endif // defined(HAVE_STDIO_H) && !(defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN))
+ 
+ // Functions to read/write memory pointers
+ 
+@@ -856,7 +854,7 @@ static bool SDLCALL mem_close(void *userdata)
+ // Functions to create SDL_IOStream structures from various data sources
+ 
+ // private platforms might define SKIP_STDIO_DIR_TEST in their build configs, too.
+-#if defined(SDL_PLATFORM_WINDOWS) || defined(SDL_PLATFORM_EMSCRIPTEN)
++#if (defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)) || defined(SDL_PLATFORM_EMSCRIPTEN)
+ #define SKIP_STDIO_DIR_TEST 1
+ #endif
+ 
+@@ -993,7 +991,7 @@ SDL_IOStream *SDL_IOFromFile(const char *file, const char *mode)
+         iostr = SDL_IOFromFP(fp, true);
+     }
+ 
+-#elif defined(SDL_PLATFORM_WINDOWS)
++#elif defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+     HANDLE handle = windows_file_open(file, mode);
+     if (handle != INVALID_HANDLE_VALUE) {
+         iostr = SDL_IOFromHandle(handle, mode, true);
+diff --git a/src/io/SDL_iostream_c.h b/src/io/SDL_iostream_c.h
+index fadb98bcb..be955e89a 100644
+--- a/src/io/SDL_iostream_c.h
++++ b/src/io/SDL_iostream_c.h
+@@ -23,7 +23,7 @@
+ #ifndef SDL_iostream_c_h_
+ #define SDL_iostream_c_h_
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ SDL_IOStream *SDL_IOFromHandle(HANDLE handle, const char *mode, bool autoclose);
+ #else
+ #if defined(HAVE_STDIO_H)
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index 2b58fa4ec..ac74b111f 100644
+--- a/test/CMakeLists.txt
++++ b/test/CMakeLists.txt
+@@ -645,7 +645,7 @@ function(add_sdl_test TEST TARGET)
+             COMMAND ${command}
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+         )
+-        if(WIN32 AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.27")
++        if((WIN32 OR CYGWIN) AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.27")
+             set_property(TEST ${TEST} APPEND PROPERTY ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_RUNTIME_DLL_DIRS:${TARGET}>")
+         endif()
+         if(NOT notrackmem)
+diff --git a/test/childprocess.c b/test/childprocess.c
+index 69a7cea2d..785356d0c 100644
+--- a/test/childprocess.c
++++ b/test/childprocess.c
+@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
+ 
+     if (print_arguments) {
+         int print_i;
+-#ifdef SDL_PLATFORM_WINDOWS
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+         /* reopen stdout as binary to prevent newline conversion */
+         _setmode(_fileno(stdout), _O_BINARY);
+ #endif
+@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
+                         continue;
+                     }
+ 
+-#ifdef SDL_PLATFORM_WINDOWS
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+                     if (strerror_s(error, sizeof(error), errno) != 0) {
+                         SDL_strlcpy(error, "Unknown error", sizeof(error));
+                     }
+-- 
+2.53.0.windows.2
+

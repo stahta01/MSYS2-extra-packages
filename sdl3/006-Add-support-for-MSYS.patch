@@ -1,0 +1,193 @@
+From ffe696f14ff241c12c94eeb4c3160d26b62dcf0f Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Thu, 7 May 2026 16:36:26 -0400
+Subject: Add support for MSYS
+
+---
+ CMakeLists.txt                      | 12 ++++++------
+ include/SDL3/SDL_egl.h              |  2 +-
+ include/SDL3/SDL_opengl.h           |  6 +++---
+ include/SDL3/SDL_opengl_glext.h     |  2 +-
+ include/SDL3/SDL_platform_defines.h |  2 +-
+ src/dynapi/SDL_dynapi.c             |  4 ++--
+ src/hidapi/windows/hid.c            |  2 +-
+ src/video/khronos/EGL/eglplatform.h |  2 +-
+ 8 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7a6f17f29..7070e745c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -129,7 +129,7 @@ list(APPEND CMAKE_REQUIRED_LINK_OPTIONS ${SDL_CHECK_REQUIRED_LINK_OPTIONS})
+ SDL_DetectCMakePlatform()
+ 
+ # Don't mistake macOS for unix
+-if(UNIX AND NOT ANDROID AND NOT APPLE AND NOT RISCOS)
++if(UNIX AND NOT ANDROID AND NOT APPLE AND NOT RISCOS AND NOT MSYS)
+   set(UNIX_SYS ON)
+ else()
+   set(UNIX_SYS OFF)
+@@ -267,7 +267,7 @@ if(SDL_FRAMEWORK)
+   set(SDL_STATIC_AVAILABLE FALSE)
+ endif()
+ 
+-if(UNIX AND NOT ANDROID AND NOT RISCOS AND NOT SDL_FRAMEWORK)
++if(UNIX AND NOT ANDROID AND NOT RISCOS AND NOT SDL_FRAMEWORK AND NOT MSYS)
+   set(SDL_RPATH_DEFAULT ON)
+ else()
+   set(SDL_RPATH_DEFAULT OFF)
+@@ -3404,7 +3404,7 @@ if (SDL_DIALOG)
+   if(ANDROID)
+     sdl_sources(${SDL3_SOURCE_DIR}/src/dialog/android/SDL_androiddialog.c)
+     set(HAVE_SDL_DIALOG TRUE)
+-  elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
++  elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU AND NOT MSYS)
+     sdl_sources(${SDL3_SOURCE_DIR}/src/dialog/unix/SDL_unixdialog.c)
+     sdl_sources(${SDL3_SOURCE_DIR}/src/dialog/unix/SDL_portaldialog.c)
+     sdl_sources(${SDL3_SOURCE_DIR}/src/dialog/unix/SDL_portaldialog.h)
+@@ -3414,7 +3414,7 @@ if (SDL_DIALOG)
+   elseif(HAIKU)
+     sdl_sources(${SDL3_SOURCE_DIR}/src/dialog/haiku/SDL_haikudialog.cc)
+     set(HAVE_SDL_DIALOG TRUE)
+-  elseif(WINDOWS)
++  elseif(WINDOWS OR MSYS)
+     sdl_sources(${SDL3_SOURCE_DIR}/src/dialog/windows/SDL_windowsdialog.c)
+     set(HAVE_SDL_DIALOG TRUE)
+   elseif(MACOS)
+@@ -3422,13 +3422,13 @@ if (SDL_DIALOG)
+     set(HAVE_SDL_DIALOG TRUE)
+   endif()
+ endif()
+-if(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
++if(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU AND NOT MSYS)
+   sdl_sources(${SDL3_SOURCE_DIR}/src/dialog/unix/SDL_zenitymessagebox.h)
+   sdl_sources(${SDL3_SOURCE_DIR}/src/dialog/unix/SDL_zenitymessagebox.c)
+ endif()
+ 
+ sdl_sources("${SDL3_SOURCE_DIR}/src/process/SDL_process.c")
+-if(WINDOWS)
++if(WINDOWS OR MSYS)
+   sdl_glob_sources(
+     "${SDL3_SOURCE_DIR}/src/process/windows/*.c"
+     "${SDL3_SOURCE_DIR}/src/process/windows/*.h"
+diff --git a/include/SDL3/SDL_egl.h b/include/SDL3/SDL_egl.h
+index 1371c4d01..f4d955d52 100644
+--- a/include/SDL3/SDL_egl.h
++++ b/include/SDL3/SDL_egl.h
+@@ -409,7 +409,7 @@ typedef void *EGLNativeDisplayType;
+ typedef void *EGLNativePixmapType;
+ typedef void *EGLNativeWindowType;
+ 
+-#elif defined(_WIN32) || defined(__VC32__) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__) /* Win32 and WinCE */
++#elif defined(_WIN32) || defined(__MSYS__) || defined(__VC32__) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__) /* Win32 and WinCE */
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN 1
+ #endif
+diff --git a/include/SDL3/SDL_opengl.h b/include/SDL3/SDL_opengl.h
+index 733f2b51a..c7fdf48b0 100644
+--- a/include/SDL3/SDL_opengl.h
++++ b/include/SDL3/SDL_opengl.h
+@@ -71,7 +71,7 @@
+  * Begin system-specific stuff.
+  */
+ 
+-#if defined(_WIN32) && !defined(__CYGWIN__)
++#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MSYS__)
+ #  if (defined(_MSC_VER) || defined(__MINGW32__)) && defined(BUILD_GL32) /* tag specify we're building mesa as a DLL */
+ #    define GLAPI __declspec(dllexport)
+ #  elif (defined(_MSC_VER) || defined(__MINGW32__)) && defined(_DLL) /* tag specifying we're building for DLL runtime support */
+@@ -84,7 +84,7 @@
+ #  else
+ #    define GLAPIENTRY __stdcall
+ #  endif
+-#elif defined(__CYGWIN__) && defined(USE_OPENGL32) /* use native windows opengl32 */
++#elif defined(__CYGWIN__) && defined(USE_OPENGL32) && !defined(__MSYS__) /* use native windows opengl32 */
+ #  define GLAPI extern
+ #  define GLAPIENTRY __stdcall
+ #elif (defined(__GNUC__) && __GNUC__ >= 4) || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590))
+@@ -100,7 +100,7 @@
+  * than "WIN32_LEAN_AND_MEAN" may include windows.h before
+  * glut.h or gl.h.
+  */
+-#if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__)
++#if (defined(_WIN32) || defined(__MSYS__)) && !defined(APIENTRY) && !defined(__CYGWIN__)
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN 1
+ #endif
+diff --git a/include/SDL3/SDL_opengl_glext.h b/include/SDL3/SDL_opengl_glext.h
+index fa0f6c2a5..a59957185 100644
+--- a/include/SDL3/SDL_opengl_glext.h
++++ b/include/SDL3/SDL_opengl_glext.h
+@@ -19,7 +19,7 @@ extern "C" {
+ **   https://github.com/KhronosGroup/OpenGL-Registry
+ */
+ 
+-#if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
++#if (defined(_WIN32) || defined(__MSYS__)) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN 1
+ #endif
+diff --git a/include/SDL3/SDL_platform_defines.h b/include/SDL3/SDL_platform_defines.h
+index 6ac850fec..55ff59f8d 100644
+--- a/include/SDL3/SDL_platform_defines.h
++++ b/include/SDL3/SDL_platform_defines.h
+@@ -307,7 +307,7 @@
+ #define SDL_PLATFORM_SOLARIS 1
+ #endif
+ 
+-#if defined(__CYGWIN__)
++#if defined(__CYGWIN__) && !defined(__MSYS__)
+ 
+ /**
+  * A preprocessor macro that is only defined if compiling for Cygwin.
+diff --git a/src/dynapi/SDL_dynapi.c b/src/dynapi/SDL_dynapi.c
+index 495a8e52c..9e454fd5e 100644
+--- a/src/dynapi/SDL_dynapi.c
++++ b/src/dynapi/SDL_dynapi.c
+@@ -47,7 +47,7 @@
+ // These headers have system specific definitions, so aren't included above
+ #include <SDL3/SDL_vulkan.h>
+ 
+-#if defined(WIN32) || defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN)
++#if defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__)
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN 1
+ #endif
+@@ -487,7 +487,7 @@ static void dynapi_warn(const char *msg)
+     const char *caption = "SDL Dynamic API Failure!";
+     (void)caption;
+ // SDL_ShowSimpleMessageBox() is a too heavy for here.
+-#if (defined(WIN32) || defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN)) && !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
++#if (defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__)) && !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
+     MessageBoxA(NULL, msg, caption, MB_OK | MB_ICONERROR);
+ #elif defined(HAVE_STDIO_H)
+     fprintf(stderr, "\n\n%s\n%s\n\n", caption, msg);
+diff --git a/src/hidapi/windows/hid.c b/src/hidapi/windows/hid.c
+index e21ecb828..18926044c 100644
+--- a/src/hidapi/windows/hid.c
++++ b/src/hidapi/windows/hid.c
+@@ -45,7 +45,7 @@ typedef LONG NTSTATUS;
+ #define _WIN32_WINNT_WIN8 0x0602
+ #endif
+ 
+-#if defined(__CYGWIN__) && !defined(HIDAPI_USING_SDL_RUNTIME)
++#if defined(__CYGWIN__) && !defined(HIDAPI_USING_SDL_RUNTIME) && !defined(__MSYS__)
+ #include <ntdef.h>
+ #include <wctype.h>
+ #define _wcsdup wcsdup
+diff --git a/src/video/khronos/EGL/eglplatform.h b/src/video/khronos/EGL/eglplatform.h
+index 6786afd90..3dcf20611 100644
+--- a/src/video/khronos/EGL/eglplatform.h
++++ b/src/video/khronos/EGL/eglplatform.h
+@@ -54,7 +54,7 @@ typedef void *EGLNativeDisplayType;
+ typedef void *EGLNativePixmapType;
+ typedef void *EGLNativeWindowType;
+ 
+-#elif defined(_WIN32) || defined(__VC32__) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__) /* Win32 and WinCE */
++#elif (defined(_WIN32) || defined(__MSYS__)) || defined(__VC32__) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__) /* Win32 and WinCE */
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN 1
+ #endif
+-- 
+2.53.0.windows.2
+

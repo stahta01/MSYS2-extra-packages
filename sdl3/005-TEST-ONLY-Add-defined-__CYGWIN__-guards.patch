@@ -1,0 +1,96 @@
+From 88373f08a0dd9ec6173955711fac5ce28ce3ecf6 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Fri, 1 May 2026 12:28:53 -0400
+Subject: TEST ONLY: Add defined(__CYGWIN__) guards
+
+The proper fix is too fix the missing uuid in MSys2 and Cygwin package
+[sdl-ci-filter msys2-*]
+---
+ src/video/windows/SDL_windowsevents.c | 2 +-
+ src/video/windows/SDL_windowsvideo.c  | 6 +++---
+ src/video/windows/SDL_windowsvideo.h  | 2 +-
+ src/video/windows/SDL_windowswindow.c | 4 ++--
+ 4 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/src/video/windows/SDL_windowsevents.c b/src/video/windows/SDL_windowsevents.c
+index d9b6520a9..e6d4bc7ef 100644
+--- a/src/video/windows/SDL_windowsevents.c
++++ b/src/video/windows/SDL_windowsevents.c
+@@ -2495,7 +2495,7 @@ LRESULT CALLBACK WIN_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
+         break;
+     }
+ 
+-#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
++#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES) && !defined(__CYGWIN__)
+     if (msg && msg == data->videodata->WM_TASKBAR_BUTTON_CREATED) {
+         data->taskbar_button_created = true;
+         WIN_ApplyWindowProgress(SDL_GetVideoDevice(), data->window);
+diff --git a/src/video/windows/SDL_windowsvideo.c b/src/video/windows/SDL_windowsvideo.c
+index 3a1527a44..094442182 100644
+--- a/src/video/windows/SDL_windowsvideo.c
++++ b/src/video/windows/SDL_windowsvideo.c
+@@ -36,7 +36,7 @@
+ #include "SDL_windowsrawinput.h"
+ #include "SDL_windowsvulkan.h"
+ 
+-#if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
++#if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES)) && !defined(__CYGWIN__)
+ #include <shobjidl.h>
+ 
+ #ifndef __ITaskbarList3_FWD_DEFINED__
+@@ -652,7 +652,7 @@ static bool WIN_VideoInit(SDL_VideoDevice *_this)
+     SDL_AddHintCallback(SDL_HINT_WINDOWS_ENABLE_MENU_MNEMONICS, UpdateWindowsEnableMenuMnemonics, NULL);
+     SDL_AddHintCallback(SDL_HINT_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN, UpdateWindowFrameUsableWhileCursorHidden, NULL);
+ 
+-#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
++#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES) && !defined(__CYGWIN__)
+     data->_SDL_WAKEUP = RegisterWindowMessageA("_SDL_WAKEUP");
+     data->WM_TASKBAR_BUTTON_CREATED = WIN_IsWindows7OrGreater() ? RegisterWindowMessageA("TaskbarButtonCreated") : 0;
+ #endif
+@@ -674,7 +674,7 @@ void WIN_VideoQuit(SDL_VideoDevice *_this)
+     WIN_QuitRawInput(_this);
+     WIN_QuitGameInput(_this);
+ 
+-#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
++#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES) && !defined(__CYGWIN__)
+     WIN_QuitModes(_this);
+     WIN_QuitDeviceNotification();
+     WIN_QuitKeyboard(_this);
+diff --git a/src/video/windows/SDL_windowsvideo.h b/src/video/windows/SDL_windowsvideo.h
+index b3240d3cb..1b955863d 100644
+--- a/src/video/windows/SDL_windowsvideo.h
++++ b/src/video/windows/SDL_windowsvideo.h
+@@ -650,7 +650,7 @@ struct SDL_VideoData
+     BYTE pre_hook_key_state[256];
+     UINT _SDL_WAKEUP;
+ 
+-#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
++#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES) && !defined(__CYGWIN__)
+     UINT WM_TASKBAR_BUTTON_CREATED;
+     ITaskbarList3 *taskbar_list;
+ #endif
+diff --git a/src/video/windows/SDL_windowswindow.c b/src/video/windows/SDL_windowswindow.c
+index 83b4fea25..4f411ed15 100644
+--- a/src/video/windows/SDL_windowswindow.c
++++ b/src/video/windows/SDL_windowswindow.c
+@@ -141,7 +141,7 @@ static DWORD GetWindowStyleEx(SDL_Window *window)
+     return style;
+ }
+ 
+-#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
++#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES) && !defined(__CYGWIN__)
+ static ITaskbarList3 *GetTaskbarList(SDL_Window *window)
+ {
+     const SDL_WindowData *data = window->internal;
+@@ -2168,7 +2168,7 @@ bool WIN_FlashWindow(SDL_VideoDevice *_this, SDL_Window *window, SDL_FlashOperat
+ 
+ bool WIN_ApplyWindowProgress(SDL_VideoDevice *_this, SDL_Window *window)
+ {
+-#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
++#if !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES) && !defined(__CYGWIN__)
+     SDL_WindowData *data = window->internal;
+     if (!data->taskbar_button_created) {
+         return true;
+-- 
+2.53.0.windows.2
+

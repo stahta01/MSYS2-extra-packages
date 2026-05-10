@@ -1,0 +1,62 @@
+From adda5bbef9bb5f1b70f2d0534162c72376c1537f Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 4 May 2026 23:08:32 -0400
+Subject: Add Cygwin guards to SDL3/SDL_stdinc.h
+
+Co-authored-by: TrueCat17 <truecat17@gmail.com>
+---
+ include/SDL3/SDL_stdinc.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/SDL3/SDL_stdinc.h b/include/SDL3/SDL_stdinc.h
+index 3e2266dc8..8d291adcc 100644
+--- a/include/SDL3/SDL_stdinc.h
++++ b/include/SDL3/SDL_stdinc.h
+@@ -739,7 +739,7 @@ typedef Sint64 SDL_Time;
+  * <inttypes.h> should define these but this is not true all platforms.
+  * (for example win32) */
+ #ifndef SDL_PRIs64
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #define SDL_PRIs64 "I64d"
+ #elif defined(PRId64)
+ #define SDL_PRIs64 PRId64
+@@ -750,7 +750,7 @@ typedef Sint64 SDL_Time;
+ #endif
+ #endif
+ #ifndef SDL_PRIu64
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #define SDL_PRIu64 "I64u"
+ #elif defined(PRIu64)
+ #define SDL_PRIu64 PRIu64
+@@ -761,7 +761,7 @@ typedef Sint64 SDL_Time;
+ #endif
+ #endif
+ #ifndef SDL_PRIx64
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #define SDL_PRIx64 "I64x"
+ #elif defined(PRIx64)
+ #define SDL_PRIx64 PRIx64
+@@ -772,7 +772,7 @@ typedef Sint64 SDL_Time;
+ #endif
+ #endif
+ #ifndef SDL_PRIX64
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #define SDL_PRIX64 "I64X"
+ #elif defined(PRIX64)
+ #define SDL_PRIX64 PRIX64
+@@ -811,7 +811,7 @@ typedef Sint64 SDL_Time;
+ #endif
+ #endif
+ /* Specifically for the `long long` -- SDL-specific. */
+-#ifdef SDL_PLATFORM_WINDOWS
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #ifndef SDL_NOLONGLONG
+ SDL_COMPILE_TIME_ASSERT(longlong_size64, sizeof(long long) == 8); /* using I64 for windows - make sure `long long` is 64 bits. */
+ #endif
+-- 
+2.53.0.windows.2
+

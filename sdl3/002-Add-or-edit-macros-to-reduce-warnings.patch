@@ -1,0 +1,234 @@
+From 84c552fa4732d71c0b8220e4f3a55ea887994c58 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Mon, 4 May 2026 15:35:00 -0400
+Subject: Add or edit macros to reduce warnings
+
+under Cygwin or MSYS build enviroments
+---
+ include/SDL3/SDL_stdinc.h                   | 13 ++++++++++
+ src/audio/wasapi/SDL_wasapi.c               |  2 +-
+ src/dialog/windows/SDL_windowsdialog.c      |  2 +-
+ src/joystick/windows/SDL_rawinputjoystick.c |  6 ++---
+ src/time/windows/SDL_systime.c              |  2 +-
+ src/video/windows/SDL_windowswindow.c       | 28 ++++++++++-----------
+ test/testautomation_stdlib.c                |  4 ++-
+
+diff --git a/include/SDL3/SDL_stdinc.h b/include/SDL3/SDL_stdinc.h
+index 8d291adcc..c23c340f7 100644
+--- a/include/SDL3/SDL_stdinc.h
++++ b/include/SDL3/SDL_stdinc.h
+@@ -810,6 +810,19 @@ typedef Sint64 SDL_Time;
+ #define SDL_PRIX32 "X"
+ #endif
+ #endif
++#if defined(__CYGWIN__)
++#define SDL_PRIlDWORD   "d"
++#define SDL_PRIuDWORD   "u"
++#define SDL_PRIdHRESULT "d"
++#define SDL_PRIxHRESULT "x"
++#define SDL_PRIdLONG    "d"
++#else
++#define SDL_PRIlDWORD   "ld"
++#define SDL_PRIuDWORD   "lu"
++#define SDL_PRIdHRESULT "ld"
++#define SDL_PRIxHRESULT "lx"
++#define SDL_PRIdLONG    "ld"
++#endif
+ /* Specifically for the `long long` -- SDL-specific. */
+ #if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #ifndef SDL_NOLONGLONG
+diff --git a/src/audio/wasapi/SDL_wasapi.c b/src/audio/wasapi/SDL_wasapi.c
+index c01f007ff..0b3ebe50f 100644
+--- a/src/audio/wasapi/SDL_wasapi.c
++++ b/src/audio/wasapi/SDL_wasapi.c
+@@ -773,7 +773,7 @@ static bool mgmtthrtask_PrepDevice(void *userdata)
+         ret = IAudioClient2_SetClientProperties(client2, &audioProps);
+         if (FAILED(ret)) {
+             // This isn't fatal, let's log it instead of failing
+-            SDL_LogWarn(SDL_LOG_CATEGORY_AUDIO, "IAudioClient2_SetClientProperties failed: 0x%lx", ret);
++            SDL_LogWarn(SDL_LOG_CATEGORY_AUDIO, "IAudioClient2_SetClientProperties failed: 0x%" SDL_PRIxHRESULT, ret);
+         }
+         IAudioClient2_Release(client2);
+     }
+diff --git a/src/dialog/windows/SDL_windowsdialog.c b/src/dialog/windows/SDL_windowsdialog.c
+index 99a49384d..da12d1822 100644
+--- a/src/dialog/windows/SDL_windowsdialog.c
++++ b/src/dialog/windows/SDL_windowsdialog.c
+@@ -1035,7 +1035,7 @@ void windows_ShowFileDialog(void *ptr)
+             const char *opts[1] = { NULL };
+             callback(userdata, opts, getFilterIndex(dialog.nFilterIndex));
+         } else {
+-            SDL_SetError("Windows error, CommDlgExtendedError: %ld", pCommDlgExtendedError());
++            SDL_SetError("Windows error, CommDlgExtendedError: %" SDL_PRIlDWORD, pCommDlgExtendedError());
+             callback(userdata, NULL, -1);
+         }
+     }
+diff --git a/src/joystick/windows/SDL_rawinputjoystick.c b/src/joystick/windows/SDL_rawinputjoystick.c
+index 7a69775e2..1f1fec357 100644
+--- a/src/joystick/windows/SDL_rawinputjoystick.c
++++ b/src/joystick/windows/SDL_rawinputjoystick.c
+@@ -705,12 +705,12 @@ static void RAWINPUT_InitWindowsGamingInput(RAWINPUT_DeviceContext *ctx)
+ 
+                     hr = __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics_add_GamepadAdded(wgi_state.gamepad_statics, &gamepad_added.iface, &wgi_state.gamepad_added_token);
+                     if (!SUCCEEDED(hr)) {
+-                        SDL_SetError("add_GamepadAdded() failed: 0x%lx", hr);
++                        SDL_SetError("add_GamepadAdded() failed: 0x%" SDL_PRIxHRESULT, hr);
+                     }
+ 
+                     hr = __x_ABI_CWindows_CGaming_CInput_CIGamepadStatics_add_GamepadRemoved(wgi_state.gamepad_statics, &gamepad_removed.iface, &wgi_state.gamepad_removed_token);
+                     if (!SUCCEEDED(hr)) {
+-                        SDL_SetError("add_GamepadRemoved() failed: 0x%lx", hr);
++                        SDL_SetError("add_GamepadRemoved() failed: 0x%" SDL_PRIxHRESULT, hr);
+                     }
+                 }
+             }
+@@ -1506,7 +1506,7 @@ static bool RAWINPUT_JoystickRumbleTriggers(SDL_Joystick *joystick, Uint16 left_
+         WindowsGamingInputGamepadState *gamepad_state = ctx->wgi_slot;
+         HRESULT hr = __x_ABI_CWindows_CGaming_CInput_CIGamepad_put_Vibration(gamepad_state->gamepad, ctx->vibration);
+         if (!SUCCEEDED(hr)) {
+-            return SDL_SetError("Setting vibration failed: 0x%lx", hr);
++            return SDL_SetError("Setting vibration failed: 0x%" SDL_PRIxHRESULT, hr);
+         }
+         ctx->triggers_rumbling = (left_rumble > 0 || right_rumble > 0);
+         return true;
+diff --git a/src/time/windows/SDL_systime.c b/src/time/windows/SDL_systime.c
+index a35ae7286..11112dc02 100644
+--- a/src/time/windows/SDL_systime.c
++++ b/src/time/windows/SDL_systime.c
+@@ -151,7 +151,7 @@ bool SDL_TimeToDateTime(SDL_Time ticks, SDL_DateTime *dt, bool localTime)
+         }
+     }
+ 
+-    return SDL_SetError("SDL_DateTime conversion failed (%lu)", GetLastError());
++    return SDL_SetError("SDL_DateTime conversion failed (%" SDL_PRIuDWORD ")", GetLastError());
+ }
+ 
+ #endif // SDL_TIME_WINDOWS
+diff --git a/src/video/windows/SDL_windowswindow.c b/src/video/windows/SDL_windowswindow.c
+index 506fdc1ae..83b4fea25 100644
+--- a/src/video/windows/SDL_windowswindow.c
++++ b/src/video/windows/SDL_windowswindow.c
+@@ -1771,16 +1771,16 @@ static STDMETHODIMP SDLDropTarget_DragEnter(SDLDropTarget *target,
+                                             POINTL pt, DWORD *pdwEffect)
+ {
+     SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                 ". In DragEnter at %ld, %ld", pt.x, pt.y);
++                 ". In DragEnter at %" SDL_PRIdLONG ", %" SDL_PRIdLONG, pt.x, pt.y);
+     *pdwEffect = DROPEFFECT_COPY;
+     POINT pnt = { pt.x, pt.y };
+     if (ScreenToClient(target->hwnd, &pnt)) {
+         SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                     ". In DragEnter at %ld, %ld => window %u at %ld, %ld", pt.x, pt.y, target->window->id, pnt.x, pnt.y);
++                     ". In DragEnter at %" SDL_PRIdLONG ", %" SDL_PRIdLONG " => window %u at %" SDL_PRIdLONG ", %" SDL_PRIdLONG, pt.x, pt.y, target->window->id, pnt.x, pnt.y);
+         SDL_SendDropPosition(target->window, pnt.x, pnt.y);
+     } else {
+         SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                     ". In DragEnter at %ld, %ld => nil, nil", pt.x, pt.y);
++                     ". In DragEnter at %" SDL_PRIdLONG ", %" SDL_PRIdLONG " => nil, nil", pt.x, pt.y);
+     }
+     return S_OK;
+ }
+@@ -1790,16 +1790,16 @@ static STDMETHODIMP SDLDropTarget_DragOver(SDLDropTarget *target,
+                                            POINTL pt, DWORD *pdwEffect)
+ {
+     SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                 ". In DragOver at %ld, %ld", pt.x, pt.y);
++                 ". In DragOver at %" SDL_PRIdLONG ", %" SDL_PRIdLONG, pt.x, pt.y);
+     *pdwEffect = DROPEFFECT_COPY;
+     POINT pnt = { pt.x, pt.y };
+     if (ScreenToClient(target->hwnd, &pnt)) {
+         SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                     ". In DragOver at %ld, %ld => window %u at %ld, %ld", pt.x, pt.y, target->window->id, pnt.x, pnt.y);
++                     ". In DragOver at %" SDL_PRIdLONG ", %" SDL_PRIdLONG " => window %u at %" SDL_PRIdLONG ", %" SDL_PRIdLONG, pt.x, pt.y, target->window->id, pnt.x, pnt.y);
+         SDL_SendDropPosition(target->window, pnt.x, pnt.y);
+     } else {
+         SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                     ". In DragOver at %ld, %ld => nil, nil", pt.x, pt.y);
++                     ". In DragOver at %" SDL_PRIdLONG ", %" SDL_PRIdLONG " => nil, nil", pt.x, pt.y);
+     }
+     return S_OK;
+ }
+@@ -1820,11 +1820,11 @@ static STDMETHODIMP SDLDropTarget_Drop(SDLDropTarget *target,
+     POINT pnt = { pt.x, pt.y };
+     if (ScreenToClient(target->hwnd, &pnt)) {
+         SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                     ". In Drop at %ld, %ld => window %u at %ld, %ld", pt.x, pt.y, target->window->id, pnt.x, pnt.y);
++                     ". In Drop at %" SDL_PRIdLONG ", %" SDL_PRIdLONG " => window %u at %" SDL_PRIdLONG ", %" SDL_PRIdLONG, pt.x, pt.y, target->window->id, pnt.x, pnt.y);
+         SDL_SendDropPosition(target->window, pnt.x, pnt.y);
+     } else {
+         SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                     ". In Drop at %ld, %ld => nil, nil", pt.x, pt.y);
++                     ". In Drop at %" SDL_PRIdLONG ", %" SDL_PRIdLONG " => nil, nil", pt.x, pt.y);
+     }
+ 
+     {
+@@ -1832,7 +1832,7 @@ static STDMETHODIMP SDLDropTarget_Drop(SDLDropTarget *target,
+         HRESULT hres;
+         hres = pDataObject->lpVtbl->EnumFormatEtc(pDataObject, DATADIR_GET, &pEnumFormatEtc);
+         SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                     ". In Drop for EnumFormatEtc, HRESULT is %08lx", hres);
++                     ". In Drop for EnumFormatEtc, HRESULT is %08" SDL_PRIxHRESULT, hres);
+         if (hres == S_OK) {
+             FORMATETC fetc;
+             while (pEnumFormatEtc->lpVtbl->Next(pEnumFormatEtc, 1, &fetc, NULL) == S_OK) {
+@@ -1864,7 +1864,7 @@ static STDMETHODIMP SDLDropTarget_Drop(SDLDropTarget *target,
+             STGMEDIUM med;
+             HRESULT hres = pDataObject->lpVtbl->GetData(pDataObject, &fetc, &med);
+             SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                         ". In Drop File for      GetData, format %08x '%s', HRESULT is %08lx",
++                         ". In Drop File for      GetData, format %08x '%s', HRESULT is %08" SDL_PRIxHRESULT,
+                          fetc.cfFormat, format_mime, hres);
+             if (SUCCEEDED(hres)) {
+                 const size_t bsize = GlobalSize(med.hGlobal);
+@@ -1912,7 +1912,7 @@ static STDMETHODIMP SDLDropTarget_Drop(SDLDropTarget *target,
+             STGMEDIUM med;
+             HRESULT hres = pDataObject->lpVtbl->GetData(pDataObject, &fetc, &med);
+             SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                         ". In Drop Text for      GetData, format %08x '%s', HRESULT is %08lx",
++                         ". In Drop Text for      GetData, format %08x '%s', HRESULT is %08" SDL_PRIxHRESULT,
+                          fetc.cfFormat, format_mime, hres);
+             if (SUCCEEDED(hres)) {
+                 const size_t bsize = GlobalSize(med.hGlobal);
+@@ -1958,7 +1958,7 @@ static STDMETHODIMP SDLDropTarget_Drop(SDLDropTarget *target,
+             STGMEDIUM med;
+             HRESULT hres = pDataObject->lpVtbl->GetData(pDataObject, &fetc, &med);
+             SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                         ". In Drop Text for      GetData, format %08x '%s', HRESULT is %08lx",
++                         ". In Drop Text for      GetData, format %08x '%s', HRESULT is %08" SDL_PRIxHRESULT,
+                          fetc.cfFormat, format_mime, hres);
+             if (SUCCEEDED(hres)) {
+                 const size_t bsize = GlobalSize(med.hGlobal);
+@@ -2012,7 +2012,7 @@ static STDMETHODIMP SDLDropTarget_Drop(SDLDropTarget *target,
+             STGMEDIUM med;
+             HRESULT hres = pDataObject->lpVtbl->GetData(pDataObject, &fetc, &med);
+             SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                         ". In Drop Text for      GetData, format %08x '%s', HRESULT is %08lx",
++                         ". In Drop Text for      GetData, format %08x '%s', HRESULT is %08" SDL_PRIxHRESULT,
+                          fetc.cfFormat, format_mime, hres);
+             if (SUCCEEDED(hres)) {
+                 const size_t bsize = GlobalSize(med.hGlobal);
+@@ -2058,7 +2058,7 @@ static STDMETHODIMP SDLDropTarget_Drop(SDLDropTarget *target,
+             STGMEDIUM med;
+             HRESULT hres = pDataObject->lpVtbl->GetData(pDataObject, &fetc, &med);
+             SDL_LogTrace(SDL_LOG_CATEGORY_INPUT,
+-                         ". In Drop File for      GetData, format %08x '%s', HRESULT is %08lx",
++                         ". In Drop File for      GetData, format %08x '%s', HRESULT is %08" SDL_PRIxHRESULT,
+                          fetc.cfFormat, format_mime, hres);
+             if (SUCCEEDED(hres)) {
+                 const size_t bsize = GlobalSize(med.hGlobal);
+diff --git a/test/testautomation_stdlib.c b/test/testautomation_stdlib.c
+index 4d1c6ea5d..7ffd8585b 100644
+--- a/test/testautomation_stdlib.c
++++ b/test/testautomation_stdlib.c
+@@ -934,7 +934,9 @@ static int SDLCALL stdlib_sscanf(void *arg)
+ #pragma GCC diagnostic pop
+ #endif
+ 
+-#ifdef _WIN64
++#if defined(__CYGWIN__)
++#define SIZE_FORMAT "zu"
++#elif defined(_WIN64)
+ #define SIZE_FORMAT "I64u"
+ #elif defined(SDL_PLATFORM_WIN32)
+ #define SIZE_FORMAT "I32u"
+-- 

@@ -1,0 +1,31 @@
+From b68ef4bba2abe1ae3178db367bb6ef67e3885842 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sat, 2 May 2026 15:21:46 -0400
+Subject: Edit SDL_d3d12.h to enable Cygwin and MSYS features
+
+---
+ src/video/directx/SDL_d3d12.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/video/directx/SDL_d3d12.h b/src/video/directx/SDL_d3d12.h
+index 2dfe67220..8587d1c3c 100644
+--- a/src/video/directx/SDL_d3d12.h
++++ b/src/video/directx/SDL_d3d12.h
+@@ -37,8 +37,14 @@
+ #define WINAPI_PARTITION_GAMES 0
+ #endif // WINAPI_PARTITION_GAMES
+ 
++#if defined(SDL_PLATFORM_WIN32) && defined(__CYGWIN__)
++  #define _WIN32 1
++#endif
+ #define COBJMACROS
+ #include "d3d12.h"
++#if defined(SDL_PLATFORM_WIN32) && defined(__CYGWIN__)
++  #undef _WIN32
++#endif
+ #include <dxgi1_6.h>
+ #include <dxgidebug.h>
+ 
+-- 
+2.53.0.windows.2
+
