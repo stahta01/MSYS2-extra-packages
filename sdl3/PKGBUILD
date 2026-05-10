@@ -1,0 +1,74 @@
+# contributer: Alexey Pavlov <alexpux@gmail.com>
+# contributer: Zach Bacon <zachbacon@budgiemedia.rocks>
+
+pkgname=sdl3
+pkgver=3.4.12
+pkgrel=1
+pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 3)"
+arch=('i686' 'x86_64')
+url="https://www.libsdl.org"
+license=('Zlib')
+depends=()
+makedepends=('cmake' 'ninja' 'autotools' 'gcc')
+source=("https://github.com/libsdl-org/SDL/releases/download/release-${pkgver}/SDL3-${pkgver}.tar.gz"{,.sig}
+        '001-Add-Cygwin-guards-to-SDL3-SDL_stdinc.h.patch'
+        '002-Add-or-edit-macros-to-reduce-warnings.patch'
+        '003-Edit-SDL_d3d12.h-to-enable-Cygwin-and-MSYS-features.patch'
+        '004-Fix-selected-CYGWIN-build-issues.patch'
+        '005-Msys-Work-around-fixes-for-IIDs.patch'
+        '006-Add-support-for-MSYS.patch'
+        '007-Cygwin-Add-__CYGWIN__-guard.patch')
+sha512sums=('c53cb5d82f6a9b7221bfd4f64d5352fd0c91837b7cb88ccf4898657b241189e25b7d405aa0c5c42ee25bad9a19c1da5c2daca6f8fde493ae26cb3e5f2883c0f5'
+            'SKIP'
+            '903b37b15151009e9fd45bace89f048722fda6cd8e317c96ee49697d17df2a3abaa669a01ab0f33460cd299bbac897c15b011b17b9e2f0cc5624d948f451a722'
+            '477c26b7a549dfbc144d497359e407e0e8016c5877b177d3335ccd6db08f484d06bab9ce69effa5cc9515fc9190d363e30a32f393cb6ddaf7629e7e9aecc6a5e'
+            'c6ddc50feda87aa1e93e185a15de1335fb910e7c23703229bd0e9d3264a14253e99fac83ef667f1a2f88204d06b446067c56573644dea3e573a18ab87b07b9d4'
+            '5b88decf00a90d1e16431ccd22856f27027f0601ef61c9475a92c07a2ec95cd2c0e442371ace838ae17a485fd32188ee2014f377a90465eec08e14a339c6b796'
+            '8157d2f02190af3f62989712cc9f0818838cc743a6d5b9d7e99f0ce9d6b93e4126bd22bbeb384bcdd7d261e8f150e4bd712d2389074e5ed91c60327393956313'
+            '240a03007f96ff5d0b79dac3f72250403b5dff7443f016a5e693c3eedfadecc7d610a6b38777fa5b7c8ecd23e3d054b9655fa5b4837f12eff462d0d2ae207cf2'
+            '6aeed1b7ddcf6a15349e124e0bee6c9765cec207e14d807182f5999aa39512b14fb46ba6b8b5405e9b678924d465b37b11509cf6e54480194804e7a58bf20ce7')
+validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
+
+prepare() {
+  cd SDL3-${pkgver}
+
+  patch -p1 -i "${srcdir}"/001-Add-Cygwin-guards-to-SDL3-SDL_stdinc.h.patch
+  patch -p1 -i "${srcdir}"/002-Add-or-edit-macros-to-reduce-warnings.patch
+  patch -p1 -i "${srcdir}"/003-Edit-SDL_d3d12.h-to-enable-Cygwin-and-MSYS-features.patch
+  patch -p1 -i "${srcdir}"/004-Fix-selected-CYGWIN-build-issues.patch
+  patch -p1 -i "${srcdir}"/005-Msys-Work-around-fixes-for-IIDs.patch
+  patch -p1 -i "${srcdir}"/006-Add-support-for-MSYS.patch
+  patch -p1 -i "${srcdir}"/007-Cygwin-Add-__CYGWIN__-guard.patch
+}
+
+build() {
+  [[ -d "build-${MSYSTEM_CARCH}" ]] && rm -rf "build-${MSYSTEM_CARCH}"
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}"
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+    -GNinja \
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+    -DCMAKE_BUILD_TYPE=Release \
+    ../SDL3-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake --build .
+}
+
+check(){
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ctest -VV || true
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake --install .
+
+  cp --no-clobber ${pkgdir}${MSYSTEM_PREFIX}/bin/msys-SDL3-0.dll ${pkgdir}${MSYSTEM_PREFIX}/bin/msys-SDL3.dll
+
+  install -Dm644 ../SDL3-${pkgver}/LICENSE.txt "$pkgdir${MSYSTEM_PREFIX}/share/licenses/$pkgname/LICENSE"
+}
+
+# vim:set ts=2 sw=2 et:

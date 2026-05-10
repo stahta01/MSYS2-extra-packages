@@ -1,0 +1,52 @@
+From e22a2e730d12e16aebb54f857df91c9c5af4dad3 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sat, 18 Jul 2026 09:49:37 -0400
+Subject: Cygwin: Add "__CYGWIN__" guard
+
+---
+ src/stdlib/SDL_getenv.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/stdlib/SDL_getenv.c b/src/stdlib/SDL_getenv.c
+index 1517b5974..deba5f5c1 100644
+--- a/src/stdlib/SDL_getenv.c
++++ b/src/stdlib/SDL_getenv.c
+@@ -22,7 +22,7 @@
+ 
+ #include "SDL_getenv_c.h"
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #include "../core/windows/SDL_windows.h"
+ #endif
+ 
+@@ -30,7 +30,7 @@
+ #include "../core/android/SDL_android.h"
+ #endif
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ #define HAVE_WIN32_ENVIRONMENT
+ #elif defined(HAVE_GETENV) && \
+       (defined(HAVE_SETENV) || defined(HAVE_PUTENV)) && \
+@@ -103,7 +103,7 @@ SDL_Environment *SDL_CreateEnvironment(bool populated)
+     env->lock = SDL_CreateMutex();
+ 
+     if (populated) {
+-#ifdef SDL_PLATFORM_WINDOWS
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+         LPWCH strings = GetEnvironmentStringsW();
+         if (strings) {
+             for (LPWCH string = strings; *string; string += SDL_wcslen(string) + 1) {
+@@ -146,7 +146,7 @@ SDL_Environment *SDL_CreateEnvironment(bool populated)
+                 SDL_InsertIntoHashTable(env->strings, variable, value, true);
+             }
+         }
+-#endif // SDL_PLATFORM_WINDOWS
++#endif // SDL_PLATFORM_WINDOWS && !__CYGWIN__
+     }
+ 
+     return env;
+-- 
+2.53.0.windows.2
+
