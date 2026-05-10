@@ -1,15 +1,15 @@
-From db70d48a67656ec5b60abf354d5c71433b274ba9 Mon Sep 17 00:00:00 2001
+From f88c4a572dffd80f188d60de661d2d7c252d4bac Mon Sep 17 00:00:00 2001
 From: Tim Stahlhut <stahta01@gmail.com>
 Date: Tue, 28 Apr 2026 02:05:10 -0400
-Subject: Add MSYS cmake guards
+Subject: Add CYGWIN cmake guards
 
 ---
- CMakeLists.txt          | 20 +++++++++++++-------
+ CMakeLists.txt          | 18 ++++++++++++------
  cmake/sdlplatform.cmake |  2 +-
- 2 files changed, 14 insertions(+), 8 deletions(-)
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index ff79c018a..237aca283 100644
+index ff79c018a..21df793f7 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1033,7 +1033,7 @@ endif()
@@ -17,7 +17,7 @@ index ff79c018a..237aca283 100644
  # anything.
  if(SDL_LIBC)
 -  if(WINDOWS AND NOT MINGW)
-+  if(WINDOWS AND NOT (MINGW OR MSYS))
++  if(WINDOWS AND NOT (MINGW OR CYGWIN))
      set(HAVE_LIBC TRUE)
      check_include_file(stdint.h HAVE_STDINT_H)
      foreach(_HEADER stdio.h string.h wchar.h ctype.h math.h limits.h)
@@ -26,7 +26,7 @@ index ff79c018a..237aca283 100644
  endif()
  
 -if(UNIX OR APPLE)
-+if(UNIX AND NOT MSYS OR APPLE)
++if(UNIX AND NOT CYGWIN OR APPLE)
    # Relevant for Unix/Darwin only
    set(DYNAPI_NEEDS_DLOPEN 1)
    CheckDLOPEN()
@@ -35,7 +35,7 @@ index ff79c018a..237aca283 100644
    CheckLibUnwind()
  
 -elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
-+elseif(UNIX AND NOT MSYS AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
++elseif(UNIX AND NOT CYGWIN AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
    if(SDL_AUDIO)
      if(SYSV5 OR SOLARIS OR HPUX)
          # Newer Solaris-based systems, like OpenIndiana, don't have this interface anymore. Check for the header first.
@@ -44,7 +44,7 @@ index ff79c018a..237aca283 100644
      set(USE_POSIX_SPAWN 1)
    endif()
 -elseif(WINDOWS)
-+elseif(WINDOWS OR MSYS)
++elseif(WINDOWS OR CYGWIN)
    find_program(WINDRES windres)
  
    check_c_source_compiles("
@@ -53,17 +53,11 @@ index ff79c018a..237aca283 100644
          set(USE_WINSDK_DIRECTX TRUE)
      endif()
 -    if(NOT MINGW AND NOT USE_WINSDK_DIRECTX)
-+    if(NOT (MINGW OR MSYS) AND NOT USE_WINSDK_DIRECTX)
++    if(NOT (MINGW OR CYGWIN) AND NOT USE_WINSDK_DIRECTX)
        if("$ENV{DXSDK_DIR}" STREQUAL "")
          message_error("DIRECTX requires the \$DXSDK_DIR environment variable to be set")
        endif()
-@@ -2091,12 +2091,18 @@ elseif(WINDOWS)
-   enable_language(RC)
-   file(GLOB VERSION_SOURCES ${SDL2_SOURCE_DIR}/src/main/windows/*.rc)
-   file(GLOB SDLMAIN_SOURCES ${SDL2_SOURCE_DIR}/src/main/windows/*.c)
--  if(MINGW OR CYGWIN)
-+  if(MINGW OR MSYS OR CYGWIN)
-     if(NOT SDL2_DISABLE_SDL2MAIN)
+@@ -2096,7 +2096,13 @@ elseif(WINDOWS)
        list(APPEND SDL_CFLAGS "-Dmain=SDL_main")
        list(INSERT SDL_LIBS 0 "-lSDL2main")
      endif(NOT SDL2_DISABLE_SDL2MAIN)
@@ -79,7 +73,7 @@ index ff79c018a..237aca283 100644
  
  elseif(APPLE)
 diff --git a/cmake/sdlplatform.cmake b/cmake/sdlplatform.cmake
-index d0d57671e..15509bcde 100644
+index d0d57671e..6c6f57ccf 100644
 --- a/cmake/sdlplatform.cmake
 +++ b/cmake/sdlplatform.cmake
 @@ -1,7 +1,7 @@
@@ -87,7 +81,7 @@ index d0d57671e..15509bcde 100644
    set(SDL_CMAKE_PLATFORM )
    # Get the platform
 -  if(WIN32)
-+  if(WIN32 OR MSYS)
++  if(WIN32 OR CYGWIN)
      set(SDL_CMAKE_PLATFORM WINDOWS)
    elseif(UNIX AND NOT APPLE)
      if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")

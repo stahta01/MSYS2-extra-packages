@@ -4,7 +4,7 @@
 _realname=SDL2
 pkgname=sdl2
 pkgver=2.32.10
-pkgrel=1
+pkgrel=2
 pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 2)"
 arch=('i686' 'x86_64')
 url="https://www.libsdl.org"
@@ -15,7 +15,7 @@ source=("https://github.com/libsdl-org/SDL/releases/download/release-${pkgver}/S
         '001-Add-MSYS-cmake-guards.patch')
 sha512sums=('b67ebdb46bc3b41c974113937e15445e47a6e115692761e2812c3965e85b9ca4d804633de6369fa3dd36cc77f5d08655570c1707245b2c46f88114aa3238fd1b'
             'SKIP'
-            'ffe66a63ae50ca157bf1b1e260a62f1d5e2b6c431e4c826ac63499a1bac862200990aac3c6c76a3bdf8f092c883bab4234dd643b745da8378f339329349c4f32')
+            '32d8d2d8b7e8fea83d1be866e9d002f361e0f953c09f37d5bba9f1dee8ab10153fdf16f25d1452161331b573d9a97631916534efd92e4048e90ea025626faa04')
 validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
 
 prepare() {
