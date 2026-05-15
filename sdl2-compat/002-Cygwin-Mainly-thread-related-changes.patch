@@ -1,0 +1,103 @@
+From 2dcf95417784cd81672b03cb04830d3557a4504d Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 26 Jul 2026 19:46:08 -0400
+Subject: Cygwin: Mainly thread related changes
+
+---
+ include/SDL2/SDL_thread.h     | 4 ++--
+ src/dynapi/SDL_dynapi_procs.h | 4 ++--
+ src/sdl2_compat.c             | 4 ++--
+ src/sdl2_protos.h             | 4 ++--
+ 4 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/include/SDL2/SDL_thread.h b/include/SDL2/SDL_thread.h
+index db67cd1..352c43d 100644
+--- a/include/SDL2/SDL_thread.h
++++ b/include/SDL2/SDL_thread.h
+@@ -35,7 +35,7 @@
+ #include "SDL_atomic.h"
+ #include "SDL_mutex.h"
+ 
+-#if (defined(__WIN32__) || defined(__GDK__)) && !defined(__WINRT__)
++#if (defined(__WIN32__) || defined(__GDK__)) && !defined(__WINRT__) && !defined(__CYGWIN__)
+ #include <process.h> /* _beginthreadex() and _endthreadex() */
+ #endif
+ #if defined(__OS2__) /* for _beginthread() and _endthread() */
+@@ -90,7 +90,7 @@ typedef enum SDL_ThreadPriority {
+ typedef int (SDLCALL * SDL_ThreadFunction) (void *data);
+ 
+ 
+-#if (defined(__WIN32__) || defined(__GDK__)) && !defined(__WINRT__)
++#if (defined(__WIN32__) || defined(__GDK__)) && !defined(__WINRT__) && !defined(__CYGWIN__)
+ /**
+  *  \file SDL_thread.h
+  *
+diff --git a/src/dynapi/SDL_dynapi_procs.h b/src/dynapi/SDL_dynapi_procs.h
+index b55e43f..a9488f7 100644
+--- a/src/dynapi/SDL_dynapi_procs.h
++++ b/src/dynapi/SDL_dynapi_procs.h
+@@ -45,7 +45,7 @@ SDL_DYNAPI_PROC(int,SDL_snprintf,(SDL_OUT_Z_CAP(b) char *a, size_t b, SDL_PRINTF
+ #ifdef SDL_CreateThread
+ #undef SDL_CreateThread
+ #endif
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_GDK)
++#if defined(SDL_PLATFORM_WIN32) && !defined(SDL_PLATFORM_CYGWIN) || defined(SDL_PLATFORM_GDK)
+ SDL_DYNAPI_PROC(SDL_Thread*,SDL_CreateThread,(SDL_ThreadFunction a, const char *b, void *c, pfnSDL_CurrentBeginThread d, pfnSDL_CurrentEndThread e),(a,b,c,d,e),return)
+ #elif defined(SDL_PLATFORM_OS2)
+ SDL_DYNAPI_PROC(SDL_Thread*,SDL_CreateThread,(SDL_ThreadFunction a, const char *b, void *c, pfnSDL_CurrentBeginThread d, pfnSDL_CurrentEndThread e),(a,b,c,d,e),return)
+@@ -731,7 +731,7 @@ SDL_DYNAPI_PROC(SDL2_bool,SDL_HasColorKey,(SDL2_Surface *a),(a),return)
+ #ifdef SDL_CreateThreadWithStackSize
+ #undef SDL_CreateThreadWithStackSize
+ #endif
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_GDK)
++#if defined(SDL_PLATFORM_WIN32) && !defined(SDL_PLATFORM_CYGWIN) || defined(SDL_PLATFORM_GDK)
+ SDL_DYNAPI_PROC(SDL_Thread*,SDL_CreateThreadWithStackSize,(SDL_ThreadFunction a, const char *b, const size_t c, void *d, pfnSDL_CurrentBeginThread e, pfnSDL_CurrentEndThread f),(a,b,c,d,e,f),return)
+ #elif defined(SDL_PLATFORM_OS2)
+ SDL_DYNAPI_PROC(SDL_Thread*,SDL_CreateThreadWithStackSize,(SDL_ThreadFunction a, const char *b, const size_t c, void *d, pfnSDL_CurrentBeginThread e, pfnSDL_CurrentEndThread f),(a,b,c,d,e,f),return)
+diff --git a/src/sdl2_compat.c b/src/sdl2_compat.c
+index 3bac146..c300799 100644
+--- a/src/sdl2_compat.c
++++ b/src/sdl2_compat.c
+@@ -12611,7 +12611,7 @@ SDL_IntersectFRectAndLine(const SDL_FRect *rect, float *X1, float *Y1, float *X2
+     return SDL2_TRUE;
+ }
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ 
+ SDL_DECLSPEC SDL_Thread *SDLCALL
+ SDL_CreateThread(SDL_ThreadFunction fn, const char *name, void *data,
+@@ -12641,7 +12641,7 @@ SDL_CreateThreadWithStackSize(SDL_ThreadFunction fn, const char *name, const siz
+     return SDL2_CreateThreadWithStackSize(fn, name, stacksize, data, NULL, NULL);
+ }
+ 
+-#endif /* SDL_PLATFORM_WINDOWS */
++#endif /* SDL_PLATFORM_WINDOWS && !SDL_PLATFORM_CYGWIN */
+ 
+ SDL_DECLSPEC unsigned long SDLCALL
+ SDL_ThreadID(void)
+diff --git a/src/sdl2_protos.h b/src/sdl2_protos.h
+index 32751ad..d0dbbb4 100644
+--- a/src/sdl2_protos.h
++++ b/src/sdl2_protos.h
+@@ -43,7 +43,7 @@ SDL2_PROTO(void,LogMessage,(int a, SDL2_LogPriority b, SDL_PRINTF_FORMAT_STRING
+ SDL2_PROTO(int,sscanf,(const char *a, SDL_SCANF_FORMAT_STRING const char *b, ...))
+ SDL2_PROTO(int,snprintf,(SDL_OUT_Z_CAP(b) char *a, size_t b, SDL_PRINTF_FORMAT_STRING const char *c, ...))
+ 
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_GDK)
++#if defined(SDL_PLATFORM_WIN32) && !defined(SDL_PLATFORM_CYGWIN) || defined(SDL_PLATFORM_GDK)
+ SDL2_PROTO(SDL_Thread*,CreateThread,(SDL_ThreadFunction a, const char *b, void *c, pfnSDL_CurrentBeginThread d, pfnSDL_CurrentEndThread e))
+ #elif defined(SDL_PLATFORM_OS2)
+ SDL2_PROTO(SDL_Thread*,CreateThread,(SDL_ThreadFunction a, const char *b, void *c, pfnSDL_CurrentBeginThread d, pfnSDL_CurrentEndThread e))
+@@ -726,7 +726,7 @@ SDL2_PROTO(SDL2_bool,IsTablet,(void))
+ SDL2_PROTO(SDL_DisplayOrientation,GetDisplayOrientation,(int a))
+ SDL2_PROTO(SDL2_bool,HasColorKey,(SDL2_Surface *a))
+ 
+-#if defined(SDL_PLATFORM_WIN32) || defined(SDL_PLATFORM_GDK)
++#if defined(SDL_PLATFORM_WIN32) && !defined(SDL_PLATFORM_CYGWIN) || defined(SDL_PLATFORM_GDK)
+ SDL2_PROTO(SDL_Thread*,CreateThreadWithStackSize,(SDL_ThreadFunction a, const char *b, const size_t c, void *d, pfnSDL_CurrentBeginThread e, pfnSDL_CurrentEndThread f))
+ #elif defined(SDL_PLATFORM_OS2)
+ SDL2_PROTO(SDL_Thread*,CreateThreadWithStackSize,(SDL_ThreadFunction a, const char *b, const size_t c, void *d, pfnSDL_CurrentBeginThread e, pfnSDL_CurrentEndThread f))
+-- 
+2.53.0.windows.2
+

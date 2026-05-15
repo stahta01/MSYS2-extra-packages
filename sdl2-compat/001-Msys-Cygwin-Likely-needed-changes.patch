@@ -1,0 +1,172 @@
+From c7be6043f743f8bc4ed03099fa1feb06a5b1c14b Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Thu, 28 May 2026 05:45:19 -0400
+Subject: Msys/Cygwin: Likely needed changes
+
+---
+ CMakeLists.txt                    | 11 ++++++++---
+ include/SDL2/SDL_config_windows.h |  2 +-
+ src/sdl2_compat.c                 | 17 +++++++++++++----
+ src/sdl3_include_wrapper.h        |  2 +-
+ src/test/SDL_test_memory.c        |  2 +-
+ test/CMakeLists.txt               |  4 ++--
+ 6 files changed, 26 insertions(+), 12 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e6d59a3..b56b249 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -359,7 +359,7 @@ if(APPLE)
+       OUTPUT_NAME "SDL2-2.0"
+       SOVERSION "0"
+   )
+-elseif(UNIX AND NOT ANDROID)
++elseif(UNIX AND NOT (ANDROID OR CYGWIN))
+   # !!! FIXME: check OUTPUT_NAME value
+   set_target_properties(SDL2 PROPERTIES
+     OUTPUT_NAME "SDL2-2.0"
+@@ -416,7 +416,7 @@ endif()
+ 
+ # !!! FIXME: what needs to be done for sdl2-compat? Look into this.
+ ## SDL2main library...
+-if(WIN32)
++if(WIN32 OR CYGWIN)
+     add_library(SDL2main STATIC src/SDLmain/windows/SDL_windows_main.c)
+     target_link_libraries(SDL2main PRIVATE shell32)
+ else()
+@@ -585,6 +585,11 @@ if(SDL2COMPAT_INSTALL)
+     set(SDL_RLD_FLAGS "")
+     set(SDL_LIBS "-lSDL2main -lSDL2")
+     set(SDL_STATIC_LIBS "-lshell32")
++  elseif(CYGWIN)
++    set(SDL_CFLAGS "${sdl2_public_macros}")
++    set(SDL_RLD_FLAGS "")
++    set(SDL_LIBS "-lcygwin -lSDL2main -lSDL2 -mwindows")
++    set(SDL_STATIC_LIBS "-lshell32")
+   elseif(MINGW)
+     set(SDL_CFLAGS "${sdl2_public_macros}")
+     set(SDL_RLD_FLAGS "")
+@@ -636,7 +641,7 @@ if(SDL2COMPAT_INSTALL)
+ 
+   set(SOEXT ${CMAKE_SHARED_LIBRARY_SUFFIX})
+   get_target_property(SONAME SDL2 OUTPUT_NAME)
+-  if(UNIX AND NOT ANDROID)
++  if(UNIX AND NOT (ANDROID OR CYGWIN))
+     install(CODE "
+       execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink
+         \"lib${SONAME}${SOPOSTFIX}${SOEXT}\" \"libSDL2${SOPOSTFIX}${SOEXT}\"
+diff --git a/include/SDL2/SDL_config_windows.h b/include/SDL2/SDL_config_windows.h
+index 28b54b9..df2d7f2 100644
+--- a/include/SDL2/SDL_config_windows.h
++++ b/include/SDL2/SDL_config_windows.h
+@@ -76,7 +76,7 @@ typedef unsigned int uintptr_t;
+ #endif /* Visual Studio 2008 */
+ #endif /* !_STDINT_H_ && !HAVE_STDINT_H */
+ 
+-#ifdef _WIN64
++#if defined(_WIN64) || defined(__LP64__)
+ # define SIZEOF_VOIDP 8
+ #else
+ # define SIZEOF_VOIDP 4
+diff --git a/src/sdl2_compat.c b/src/sdl2_compat.c
+index c8d0eec..3bac146 100644
+--- a/src/sdl2_compat.c
++++ b/src/sdl2_compat.c
+@@ -381,10 +381,16 @@ static bool SDL2Compat_CheckDebugLogging(void)
+ /* Obviously we can't use SDL_LoadObject() to load SDL3.  :)  */
+ /* FIXME: Updated library names after https://github.com/libsdl-org/SDL/issues/5626 solidifies.  */
+ static char loaderror[256];
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN)
+     static HMODULE Loaded_SDL3 = NULL;
+     #define DIRSEP "\\"
+-    #define SDL3_LIBNAME "SDL3.dll"
++    #if defined(SDL_PLATFORM_MSYS)
++        #define SDL3_LIBNAME "msys-SDL3.dll"
++    #elif defined(SDL_PLATFORM_CYGWIN)
++        #define SDL3_LIBNAME "cygSDL3.dll"
++    #else
++        #define SDL3_LIBNAME "SDL3.dll"
++    #endif
+     #define LoadSDL3Library() ((Loaded_SDL3 = LoadLibraryA(SDL3_LIBNAME)) != NULL)
+     #define LookupSDL3Sym(sym) (void *)GetProcAddress(Loaded_SDL3, sym)
+     #define CloseSDL3Library() { if (Loaded_SDL3) { FreeLibrary(Loaded_SDL3); Loaded_SDL3 = NULL; } }
+@@ -624,7 +630,7 @@ static void OS_GetExeName(char *buf, const unsigned maxpath, bool *use_base_path
+         }
+     }
+ }
+-#elif defined(_WIN32)
++#elif defined(_WIN32) || defined(__CYGWIN__)
+ static void OS_GetExeName(char *buf, const unsigned maxpath, bool *use_base_path)
+ {
+     buf[0] = '\0';
+@@ -1059,7 +1065,7 @@ LoadSDL3(void)
+ 
+         okay = LoadSDL3Library();
+         if (!okay) {
+-            SDL2COMPAT_stpcpy(loaderror, "Failed loading SDL3 library.");
++            SDL2COMPAT_stpcpy(loaderror, "Failed loading SDL3 library [" SDL3_LIBNAME "].");
+         } else {
+             /* Load SDL_GetVersion() alone first to allow us to check and log the required SDL3 version */
+             SDL3_GetVersion = (SDL3_GetVersion_t) LoadSDL3Symbol("SDL_GetVersion", &okay);
+@@ -1226,6 +1232,9 @@ static void dllquit(void)
+ #define __FLTUSED__
+ __declspec(selectany) int _fltused = 1;
+ #endif
++#if defined(__CYGWIN__)
++#define _DllMainCRTStartup DllMain
++#endif
+ #if defined(__MINGW32__)
+ #define _DllMainCRTStartup DllMainCRTStartup
+ #endif
+diff --git a/src/sdl3_include_wrapper.h b/src/sdl3_include_wrapper.h
+index c3b7777..c1ad8ca 100644
+--- a/src/sdl3_include_wrapper.h
++++ b/src/sdl3_include_wrapper.h
+@@ -1351,7 +1351,7 @@
+ #include <SDL3/SDL_main.h>
+ #include <SDL3/SDL_vulkan.h>
+ 
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(__CYGWIN__)
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN 1
+ #endif
+diff --git a/src/test/SDL_test_memory.c b/src/test/SDL_test_memory.c
+index 565cf61..ed003a2 100644
+--- a/src/test/SDL_test_memory.c
++++ b/src/test/SDL_test_memory.c
+@@ -36,7 +36,7 @@ static SDL_bool s_unwind_symbol_names = SDL_TRUE;
+ #endif
+ #endif
+ 
+-#if defined(__WIN32__) && !defined(__WATCOMC__)
++#if defined(__WIN32__) && !defined(__WATCOMC__) && !defined(__CYGWIN__)
+ #define WIN32_WITH_DBGHELP
+ #endif
+ 
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index 0437b62..26f8492 100644
+--- a/test/CMakeLists.txt
++++ b/test/CMakeLists.txt
+@@ -56,7 +56,7 @@ function(test_program NAME)
+       ENVIRONMENT "SDL_AUDIODRIVER=dummy;SDL_VIDEODRIVER=dummy"
+       TIMEOUT ${timeout}
+     )
+-    if(WIN32 AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.27")
++    if((WIN32 OR CYGWIN) AND CMAKE_VERSION VERSION_GREATER_EQUAL "3.27")
+       set_property(TEST ${NAME} APPEND PROPERTY ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_RUNTIME_DLL_DIRS:${NAME}>")
+       if(TARGET SDL3::SDL3-shared)
+         set_property(TEST ${NAME} APPEND PROPERTY ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_FILE_DIR:SDL3::SDL3-shared>")
+@@ -112,7 +112,7 @@ test_program(testmouse SRC "testmouse.c")
+ test_program(testmultiaudio SRC "testmultiaudio.c" "testutils.c")
+ if(APPLE)
+   set(TESTNATIVE_EXTRA "testnativecocoa.m")
+-elseif(WIN32)
++elseif(WIN32 OR CYGWIN)
+   set(TESTNATIVE_EXTRA "testnativew32.c")
+ elseif(UNIX AND NOT ANDROID)
+   if(SDL2COMPAT_X11)
+-- 
+2.53.0.windows.2
+

@@ -1,0 +1,67 @@
+From 97df08d0d3c4931f2a8ca70715544d21307d28b6 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Thu, 28 May 2026 15:30:35 -0400
+Subject: Cygwin warning reduction
+
+---
+ include/SDL2/SDL_stdinc.h    | 8 ++++----
+ test/testautomation_stdlib.c | 4 +++-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/include/SDL2/SDL_stdinc.h b/include/SDL2/SDL_stdinc.h
+index 73df518..6394894 100644
+--- a/include/SDL2/SDL_stdinc.h
++++ b/include/SDL2/SDL_stdinc.h
+@@ -266,7 +266,7 @@ typedef uint64_t Uint64;
+  * <stdint.h> should define these but this is not true all platforms.
+  * (for example win32) */
+ #ifndef SDL_PRIs64
+-#if defined(__WIN32__) || defined(__GDK__)
++#if defined(__WIN32__) && !defined(__CYGWIN__) || defined(__GDK__)
+ #define SDL_PRIs64 "I64d"
+ #elif defined(PRId64)
+ #define SDL_PRIs64 PRId64
+@@ -277,7 +277,7 @@ typedef uint64_t Uint64;
+ #endif
+ #endif
+ #ifndef SDL_PRIu64
+-#if defined(__WIN32__) || defined(__GDK__)
++#if defined(__WIN32__) && !defined(__CYGWIN__) || defined(__GDK__)
+ #define SDL_PRIu64 "I64u"
+ #elif defined(PRIu64)
+ #define SDL_PRIu64 PRIu64
+@@ -288,7 +288,7 @@ typedef uint64_t Uint64;
+ #endif
+ #endif
+ #ifndef SDL_PRIx64
+-#if defined(__WIN32__) || defined(__GDK__)
++#if defined(__WIN32__) && !defined(__CYGWIN__) || defined(__GDK__)
+ #define SDL_PRIx64 "I64x"
+ #elif defined(PRIx64)
+ #define SDL_PRIx64 PRIx64
+@@ -299,7 +299,7 @@ typedef uint64_t Uint64;
+ #endif
+ #endif
+ #ifndef SDL_PRIX64
+-#if defined(__WIN32__) || defined(__GDK__)
++#if defined(__WIN32__) && !defined(__CYGWIN__) || defined(__GDK__)
+ #define SDL_PRIX64 "I64X"
+ #elif defined(PRIX64)
+ #define SDL_PRIX64 PRIX64
+diff --git a/test/testautomation_stdlib.c b/test/testautomation_stdlib.c
+index 7393fa6..dda0f84 100644
+--- a/test/testautomation_stdlib.c
++++ b/test/testautomation_stdlib.c
+@@ -582,7 +582,9 @@ int stdlib_sscanf(void *arg)
+ #pragma GCC diagnostic pop
+ #endif
+
+-#if defined(_WIN64)
++#if defined(__CYGWIN__)
++#define SIZE_FORMAT "zu"
++#elif defined(_WIN64)
+ #define SIZE_FORMAT "I64u"
+ #elif defined(__WIN32__)
+ #define SIZE_FORMAT "I32u"
+--
+2.53.0.windows.2
