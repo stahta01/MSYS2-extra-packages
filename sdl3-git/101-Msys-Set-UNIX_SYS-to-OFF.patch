@@ -1,0 +1,30 @@
+From 26a4592c7575c0f987690f79b6260c0f13b72519 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 24 May 2026 17:43:22 -0400
+Subject: Msys: Set UNIX_SYS to OFF
+
+[sdl-ci-filter cygwin]
+[sdl-ci-filter msys2-*]
+[sdl-ci-filter msvc-*]
+[sdl-ci-filter ngage]
+[sdl-ci-filter steamrt4]
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 51657f6e4..465848acf 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -132,7 +132,7 @@ list(APPEND CMAKE_REQUIRED_LINK_OPTIONS ${SDL_CHECK_REQUIRED_LINK_OPTIONS})
+ SDL_DetectCMakePlatform()
+ 
+ # Don't mistake macOS for unix
+-if(UNIX AND NOT ANDROID AND NOT APPLE AND NOT RISCOS)
++if(UNIX AND NOT (ANDROID OR APPLE OR RISCOS OR MSYS))
+   set(UNIX_SYS ON)
+ else()
+   set(UNIX_SYS OFF)
+-- 
+2.53.0.windows.2
+

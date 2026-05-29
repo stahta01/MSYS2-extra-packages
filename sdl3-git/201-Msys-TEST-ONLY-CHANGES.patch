@@ -1,0 +1,64 @@
+From b447d4ee51c57417acfdc7310ea416e4919f2a67 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Tue, 28 Jul 2026 10:09:42 -0400
+Subject: Msys: TEST ONLY CHANGES
+
+Work around fixes for IIDs
+
+[sdl-ci-filter msys2-*]
+[sdl-ci-filter msvc-*]
+---
+ src/camera/mediafoundation/SDL_camera_mediafoundation.c | 4 ++++
+ src/dialog/windows/SDL_windowsdialog.c                  | 4 ++++
+ src/video/windows/SDL_windowswindow.c                   | 5 +++++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/src/camera/mediafoundation/SDL_camera_mediafoundation.c b/src/camera/mediafoundation/SDL_camera_mediafoundation.c
+index f04b77b59..f4504fc85 100644
+--- a/src/camera/mediafoundation/SDL_camera_mediafoundation.c
++++ b/src/camera/mediafoundation/SDL_camera_mediafoundation.c
+@@ -38,6 +38,10 @@
+ #include "../SDL_syscamera.h"
+ #include "../SDL_camera_c.h"
+ 
++#ifdef __MSYS__
++const IID GUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
++#endif
++
+ static const IID SDL_IID_IMFMediaSource = { 0x279a808d, 0xaec7, 0x40c8, { 0x9c, 0x6b, 0xa6, 0xb4, 0x92, 0xc7, 0x8a, 0x66 } };
+ static const IID SDL_IID_IMF2DBuffer = { 0x7dc9d5f9, 0x9ed9, 0x44ec, { 0x9b, 0xbf, 0x06, 0x00, 0xbb, 0x58, 0x9f, 0xbb } };
+ static const IID SDL_IID_IMF2DBuffer2 = { 0x33ae5ea6, 0x4316, 0x436f, { 0x8d, 0xdd, 0xd7, 0x3d, 0x22, 0xf8, 0x29, 0xec } };
+diff --git a/src/dialog/windows/SDL_windowsdialog.c b/src/dialog/windows/SDL_windowsdialog.c
+index 660665c91..6f46b38a8 100644
+--- a/src/dialog/windows/SDL_windowsdialog.c
++++ b/src/dialog/windows/SDL_windowsdialog.c
+@@ -26,6 +26,10 @@
+ #include <unknwn.h>
+ #include <commdlg.h>
+ #include <shlobj.h>
++#if defined(__MSYS__) && !defined(INITGUID)
++    #define INITGUID
++    #include <guiddef.h>
++#endif
+ #include <shobjidl.h>
+ #include "../../thread/SDL_systhread.h"
+ 
+diff --git a/src/video/windows/SDL_windowswindow.c b/src/video/windows/SDL_windowswindow.c
+index b6a425151..737210b9a 100644
+--- a/src/video/windows/SDL_windowswindow.c
++++ b/src/video/windows/SDL_windowswindow.c
+@@ -39,6 +39,11 @@
+ // Dropfile support
+ #include <shellapi.h>
+ 
++#if defined(__MSYS__) && !defined(INITGUID)
++    #define INITGUID
++    #include <guiddef.h>
++#endif
++
+ #if !(defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
+ #include <shobjidl.h>
+ #endif
+-- 
+2.53.0.windows.2
+

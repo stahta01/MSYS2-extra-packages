@@ -1,0 +1,50 @@
+From 482270be1a70bdb830b9749640307db95a9440d6 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Sun, 24 May 2026 17:43:22 -0400
+Subject: Msys: Add SDL_PLATFORM_MSYS
+
+[sdl-ci-filter cygwin]
+[sdl-ci-filter msys2-*]
+[sdl-ci-filter msvc-*]
+[sdl-ci-filter ngage]
+---
+ include/SDL3/SDL_platform_defines.h | 9 +++++++++
+ src/SDL.c                           | 2 ++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/include/SDL3/SDL_platform_defines.h b/include/SDL3/SDL_platform_defines.h
+index 4d1374007..f10175c00 100644
+--- a/include/SDL3/SDL_platform_defines.h
++++ b/include/SDL3/SDL_platform_defines.h
+@@ -317,6 +317,15 @@
+ #define SDL_PLATFORM_CYGWIN 1
+ #endif
+ 
++#if defined(__MSYS__)
++
++/**
++ * A preprocessor macro that is only defined if compiling for Msys.
++ *
++ */
++#define SDL_PLATFORM_MSYS 1
++#endif
++
+ #if (defined(_WIN32) || defined(__CYGWIN__)) && !defined(__NGAGE__)
+ 
+ /**
+diff --git a/src/SDL.c b/src/SDL.c
+index 1f220b791..249dbdb5d 100644
+--- a/src/SDL.c
++++ b/src/SDL.c
+@@ -813,6 +813,8 @@ const char *SDL_GetPlatform(void)
+     return "RISC OS";
+ #elif defined(SDL_PLATFORM_SOLARIS)
+     return "Solaris";
++#elif defined(SDL_PLATFORM_MSYS)
++    return "Msys";
+ #elif defined(SDL_PLATFORM_CYGWIN)
+     return "Cygwin";
+ #elif defined(SDL_PLATFORM_WIN32)
+-- 
+2.53.0.windows.2
+
