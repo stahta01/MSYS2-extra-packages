@@ -1,0 +1,64 @@
+From fa6ee0d722e36ec245aae7d72ed9146076b2d5bd Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Tue, 28 Jul 2026 10:09:42 -0400
+Subject: Msys: Work around fixes for IIDs
+
+[sdl-ci-filter cygwin]
+[sdl-ci-filter msys2-*]
+[sdl-ci-filter msvc-*]
+[sdl-ci-filter ngage]
+[sdl-ci-filter steamrt4]
+---
+ src/camera/mediafoundation/SDL_camera_mediafoundation.c | 4 ++++
+ src/dialog/windows/SDL_windowsdialog.c                  | 4 ++++
+ src/video/windows/SDL_windowswindow.c                   | 4 ++++
+ 3 files changed, 12 insertions(+)
+
+diff --git a/src/camera/mediafoundation/SDL_camera_mediafoundation.c b/src/camera/mediafoundation/SDL_camera_mediafoundation.c
+index f04b77b59..f4504fc85 100644
+--- a/src/camera/mediafoundation/SDL_camera_mediafoundation.c
++++ b/src/camera/mediafoundation/SDL_camera_mediafoundation.c
+@@ -38,6 +38,10 @@
+ #include "../SDL_syscamera.h"
+ #include "../SDL_camera_c.h"
+ 
++#ifdef __MSYS__
++const IID GUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
++#endif
++
+ static const IID SDL_IID_IMFMediaSource = { 0x279a808d, 0xaec7, 0x40c8, { 0x9c, 0x6b, 0xa6, 0xb4, 0x92, 0xc7, 0x8a, 0x66 } };
+ static const IID SDL_IID_IMF2DBuffer = { 0x7dc9d5f9, 0x9ed9, 0x44ec, { 0x9b, 0xbf, 0x06, 0x00, 0xbb, 0x58, 0x9f, 0xbb } };
+ static const IID SDL_IID_IMF2DBuffer2 = { 0x33ae5ea6, 0x4316, 0x436f, { 0x8d, 0xdd, 0xd7, 0x3d, 0x22, 0xf8, 0x29, 0xec } };
+diff --git a/src/dialog/windows/SDL_windowsdialog.c b/src/dialog/windows/SDL_windowsdialog.c
+index a9f2c749b..9ee6eb7c1 100644
+--- a/src/dialog/windows/SDL_windowsdialog.c
++++ b/src/dialog/windows/SDL_windowsdialog.c
+@@ -371,6 +371,10 @@ struct IFileDialog2
+ 
+ #endif // #ifndef __IFileDialog2_INTERFACE_DEFINED__
+ 
++#if defined(__MSYS__) && defined(__x86_64__)
++    const IID IID_IShellItem = {0x43826d1e, 0xe718, 0x42ee, {0xbc, 0x55, 0xa1, 0xe2, 0x61, 0xc3, 0x7b, 0xfe}};
++#endif
++
+ /* *INDENT-OFF* */ // clang-format off
+ static const CLSID SDL_CLSID_FileOpenDialog = { 0xdc1c5a9c, 0xe88a, 0x4dde, { 0xa5, 0xa1, 0x60, 0xf8, 0x2a, 0x20, 0xae, 0xf7 } };
+ static const CLSID SDL_CLSID_FileSaveDialog = { 0xc0b4e2f3, 0xba21, 0x4773, { 0x8d, 0xba, 0x33, 0x5e, 0xc9, 0x46, 0xeb, 0x8b } };
+diff --git a/src/video/windows/SDL_windowswindow.c b/src/video/windows/SDL_windowswindow.c
+index 7c4270e1a..f47095e5a 100644
+--- a/src/video/windows/SDL_windowswindow.c
++++ b/src/video/windows/SDL_windowswindow.c
+@@ -43,6 +43,10 @@
+ #include <shobjidl.h>
+ #endif
+ 
++#if defined(__MSYS__) && defined(__x86_64__)
++    const IID IID_ITaskbarList3 = {0xea1afb91, 0x9e28, 0x4b86, {0x90, 0xe9, 0x9e, 0x9f, 0x8a, 0x5e, 0xef, 0xaf}};
++#endif
++
+ // Windows CE compatibility
+ #ifndef SWP_NOCOPYBITS
+ #define SWP_NOCOPYBITS 0
+-- 
+2.53.0.windows.2
+

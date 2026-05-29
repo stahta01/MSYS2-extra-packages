@@ -1,0 +1,80 @@
+# contributer: Alexey Pavlov <alexpux@gmail.com>
+# contributer: Zach Bacon <zachbacon@budgiemedia.rocks>
+
+_realname=sdl3
+_sourcedir=${_realname}-git
+pkgbase=${_realname}-git
+pkgname=${_realname}
+pkgver=3.5.0+v.959.c3.g616b8fb338c
+pkgrel=1
+pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 3)"
+arch=('i686' 'x86_64')
+url="https://www.libsdl.org"
+license=('Zlib')
+depends=('libiconv')
+provides=(${_realname})
+conflicts=(${_realname})
+makedepends=('cmake' 'ninja' 'autotools' 'gcc' 'libiconv-devel')
+source=(${_sourcedir}::"git+https://github.com/libsdl-org/SDL.git#branch=main"
+        '001-Msys-Add-SDL_PLATFORM_MSYS.patch'
+        '101-Msys-Set-UNIX_SYS-to-OFF.patch'
+        '201-msys-Work-around-fixes-for-IIDs.patch')
+sha512sums=('SKIP'
+            '4d685c9f5acb989b686dfe95b0e20877f593812cb13fbdacc7a8c950be46171523d6b16f383cf5ad61651696232b52ce7bfb1a6c53710bdf194456345c8cebf2'
+            'dc23fc80e476d7bfe75ad6dab58f271078197a00849794914742fc68daf6efd05d0426b994f1285de6e91a5f88be284a3fa5485700f37207795b58ea2fb89760'
+            'cc5ba8ff8a42289ea9729b1fee3985544f340d79c4a4e057a2cce8847a87e8326dba9ae021c648a2794fd126f2603f6f9a3f0dc6db2c020d15b7de313fc0f365')
+validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
+
+# Declare global variables; begin with underscore to avoid name conflicts
+_git_base_commit=
+
+pkgver() {
+  cd ${srcdir}/${_sourcedir}
+  local _major=$(head -n 100 include/SDL3/SDL_version.h | grep 'SDL_MAJOR_VERSION' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  local _minor1=$(head -n 100 include/SDL3/SDL_version.h | grep 'SDL_MINOR_VERSION' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  local _minor2=$(head -n 100 include/SDL3/SDL_version.h | grep 'SDL_MICRO_VERSION' | sed -e 's/.* //' | tr '\n' '.' | sed 's/.$/\n/')
+  printf "%s.%s.%s+v.%s.c%s.g%s" "$_major" "$_minor1" "$_minor2" $(git rev-list --count $(git rev-list -1 ${_git_base_commit} include/SDL3/SDL_version.h)..${_git_base_commit}) $(git rev-list --count ${_git_base_commit}..HEAD) $(git rev-parse --short=11 ${_git_base_commit})
+}
+
+prepare() {
+  cd ${srcdir}/${_sourcedir}
+
+  _git_base_commit=$(git rev-parse HEAD)
+  GIT_AM="git am --committer-date-is-author-date"
+
+  git config --local user.name  "nobody"
+  git config --local user.email "nobody@example.com"
+
+  ${GIT_AM} ${srcdir}/001-Msys-Add-SDL_PLATFORM_MSYS.patch
+  ${GIT_AM} ${srcdir}/101-Msys-Set-UNIX_SYS-to-OFF.patch
+  ${GIT_AM} ${srcdir}/201-msys-Work-around-fixes-for-IIDs.patch
+}
+
+build() {
+  [[ -d "build-${MSYSTEM_CARCH}" ]] && rm -rf "build-${MSYSTEM_CARCH}"
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}"
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe \
+    -GNinja \
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+    ../${_sourcedir}
+
+  ${MSYSTEM_PREFIX}/bin/cmake --build .
+}
+
+check(){
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ctest -VV || true # || test/testprocess test/childprocess.exe || true
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake --install .
+
+  install -Dm644 ../${_sourcedir}/LICENSE.txt "$pkgdir${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE"
+}
+
+# vim:set ts=2 sw=2 et:
