@@ -1,0 +1,60 @@
+# contributer: Alexey Pavlov <alexpux@gmail.com>
+# contributer: Zach Bacon <zachbacon@budgiemedia.rocks>
+
+_realname=SDL2_image
+pkgname=sdl2_image
+pkgver=2.8.12
+pkgrel=1
+pkgdesc="A simple library to load images of various formats as SDL surfaces (Version 2)"
+arch=('i686' 'x86_64')
+url="https://www.libsdl.org"
+license=('Zlib')
+#depends=('sdl2' 'libpng' 'libtiff' 'libjpeg-turbo' 'libwebp' 'libavif' 'libjxl')
+makedepends=('cmake')
+source=("https://github.com/libsdl-org/SDL_image/releases/download/release-${pkgver}/SDL2_image-${pkgver}.tar.gz"{,.sig}
+        '001-Cygwin-Fix-post-build.patch'
+        '002-Msys-Cygwin-Change-DLL-name.patch')
+sha512sums=('c2574d83f8ee89b97cc992fe6a579c87a1b9a1aa7a8a3cfb6bf58f10d3880a157d70cd053767cc2ade1bd124e102356a50274d688e24b2e04a375588e54114ac'
+            'SKIP'
+            '657749dc75f97e6f2cec680a6da99701c4f175157b90444d727684dfae2c4122b246c4fc7c2a238b6efe4bbcb219a0339ced146f52ef60622aeb17670820e58e'
+            '2d9e5c33427e2f6321314b6062f2e53a17922e37604fd58c1433f96340894848f14c2f6714872a525f34022805530c94977ebe81b5f8f1454ba8072ac403ae19')
+#validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
+
+prepare() {
+  cd SDL2_image-${pkgver}
+
+  patch -p1 -i "${srcdir}"/001-Cygwin-Fix-post-build.patch
+  patch -p1 -i "${srcdir}"/002-Msys-Cygwin-Change-DLL-name.patch
+}
+
+build() {
+  [[ -d "build-${MSYSTEM_CARCH}" ]] && rm -rf "build-${MSYSTEM_CARCH}"
+  mkdir -p "${srcdir}/build-${MSYSTEM_CARCH}"
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --fresh \
+    -GNinja \
+    -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+    -DCMAKE_BUILD_TYPE=Release \
+    ../${_realname}-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake --build .
+}
+
+check(){
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  ctest -VV
+}
+
+package() {
+  cd "${srcdir}/build-${MSYSTEM_CARCH}"
+
+  sed -i 's/libSDL2_image.dll"/msys-SDL2_image.dll"/' cmake_install.cmake
+
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake --install .
+
+  install -Dm644 ../SDL2_image-${pkgver}/LICENSE.txt "$pkgdir${MSYSTEM_PREFIX}/share/licenses/$pkgname/LICENSE"
+}
+
+# vim:set ts=2 sw=2 et:

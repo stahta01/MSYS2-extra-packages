@@ -1,0 +1,25 @@
+From 7f743905640292e435d4d9552a297830f1565977 Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Wed, 29 Jul 2026 10:56:15 -0400
+Subject: Cygwin: Fix post build
+
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fa0fac80..895e57e6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -267,7 +267,7 @@ if(NOT ANDROID)
+         )
+     endif()
+ endif()
+-if(SDL2IMAGE_BUILD_SHARED_LIBS AND (APPLE OR (UNIX AND NOT ANDROID)))
++if(SDL2IMAGE_BUILD_SHARED_LIBS AND (APPLE OR (UNIX AND NOT (ANDROID OR CYGWIN))))
+     add_custom_command(TARGET SDL2_image POST_BUILD
+         COMMAND "${CMAKE_COMMAND}" -E create_symlink "$<TARGET_SONAME_FILE_NAME:SDL2_image>" "libSDL2_image$<$<CONFIG:Debug>:${SDL2IMAGE_DEBUG_POSTFIX}>$<TARGET_FILE_SUFFIX:SDL2_image>"
+         # BYPRODUCTS "libSDL2_image$<$<CONFIG:Debug>:${SDL2IMAGE_DEBUG_POSTFIX}>$<TARGET_FILE_SUFFIX:SDL2_image>" # Needs CMake 3.20
+-- 
+2.53.0.windows.2
+
