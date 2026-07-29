@@ -1,0 +1,55 @@
+From 8253c0e51ecd70c6ebddab7b63136584b4bcb82c Mon Sep 17 00:00:00 2001
+From: Tim Stahlhut <stahta01@gmail.com>
+Date: Wed, 29 Jul 2026 11:16:44 -0400
+Subject: Msys/Cygwin: Change DLL name
+
+---
+ CMakeLists.txt | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 895e57e6..67648c64 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -256,9 +256,13 @@ set_target_properties(SDL2_image PROPERTIES
+ if(NOT ANDROID)
+     set_target_properties(SDL2_image PROPERTIES
+         DEBUG_POSTFIX "${SDL2IMAGE_DEBUG_POSTFIX}"
+-        SOVERSION "${LT_MAJOR}"
+-        VERSION "${LT_VERSION}"
+     )
++    if(NOT CYGWIN)
++        set_target_properties(SDL2_image PROPERTIES
++            SOVERSION "${LT_MAJOR}"
++            VERSION "${LT_VERSION}"
++        )
++    endif()
+     if(APPLE)
+         cmake_minimum_required(VERSION 3.17)
+         set_target_properties(SDL2_image PROPERTIES
+@@ -279,13 +283,21 @@ if(SDL2IMAGE_BUILD_SHARED_LIBS)
+         set_target_properties(SDL2_image PROPERTIES
+             PREFIX ""
+         )
++    elseif(MSYS)
++        set_target_properties(SDL2_image PROPERTIES
++            PREFIX "msys-"
++        )
++    elseif(CYGWIN)
++        set_target_properties(SDL2_image PROPERTIES
++            PREFIX "cyg"
++        )
+     endif()
+     if(OS2)
+         # OS/2 doesn't support a DLL name longer than 8 characters.
+         set_target_properties(SDL2_image PROPERTIES
+             OUTPUT_NAME "SDL2img"
+         )
+-    elseif(UNIX AND NOT ANDROID)
++    elseif(UNIX AND NOT (ANDROID OR CYGWIN))
+         set_target_properties(SDL2_image PROPERTIES
+             OUTPUT_NAME "SDL2_image-${LT_RELEASE}"
+         )
+-- 
+2.53.0.windows.2
+
