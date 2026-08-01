@@ -7,9 +7,11 @@ cp --preserve=timestamps -f ./flac/flac-1.4.3-3-x86_64.pkg.tar.zst ./packages/xr
 cp --preserve=timestamps -f ./lame/lame-3.100-6-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
 cp --preserve=timestamps -f ./opus/opus-1.5.2-1-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
 cp --preserve=timestamps -f ./libvorbis/libvorbis-1.3.7-3-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
-cp --preserve=timestamps -f ./sdl2/sdl2-2.32.10-1-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
-cp --preserve=timestamps -f ./mpg123/mpg123-1.33.5-1-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
-cp --preserve=timestamps -f ./libsndfile/libsndfile-1.2.2-3-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
+#cp --preserve=timestamps -f ./sdl2/sdl2-2.32.10-1-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
+cp --preserve=timestamps -f ./sdl3/sdl3-3.4.12-1-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
+cp --preserve=timestamps -f ./sdl2-compat/sdl2-compat-2.32.70-1-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
+cp --preserve=timestamps -f ./mpg123/mpg123-1.33.5-2-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
+cp --preserve=timestamps -f ./libsndfile/libsndfile-1.2.2-4-x86_64.pkg.tar.zst ./packages/xroar_depends_MSYS_64bit_packages/
 
 mkdir -p packages/xroar_depends_MSYS_32bit_packages
 
@@ -20,6 +22,8 @@ cp --preserve=timestamps -f ./flac/flac-1.4.3-3-i686.pkg.tar.zst ./packages/xroa
 cp --preserve=timestamps -f ./lame/lame-3.100-6-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
 cp --preserve=timestamps -f ./opus/opus-1.5.2-1-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
 cp --preserve=timestamps -f ./libvorbis/libvorbis-1.3.7-3-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
-cp --preserve=timestamps -f ./sdl2/sdl2-2.32.10-1-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
-cp --preserve=timestamps -f ./mpg123/mpg123-1.33.5-1-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
-cp --preserve=timestamps -f ./libsndfile/libsndfile-1.2.2-3-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
+#cp --preserve=timestamps -f ./sdl2/sdl2-2.32.10-1-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
+cp --preserve=timestamps -f ./sdl3/sdl3-3.4.12-1-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
+cp --preserve=timestamps -f ./sdl2-compat/sdl2-compat-2.32.70-1-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
+cp --preserve=timestamps -f ./mpg123/mpg123-1.33.5-2-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
+cp --preserve=timestamps -f ./libsndfile/libsndfile-1.2.2-4-i686.pkg.tar.zst ./packages/xroar_depends_MSYS_32bit_packages/
