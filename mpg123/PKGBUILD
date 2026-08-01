@@ -3,15 +3,15 @@
 
 pkgname=mpg123
 pkgver=1.33.5
-pkgrel=1
+pkgrel=2
 pkgdesc='Console based real time MPEG Audio Player for Layer 1, 2 and 3'
 url='https://mpg123.de/'
 arch=('i686' 'x86_64')
 license=('LGPL2.1')
 depends=()
-makedepends=('sdl2' 'autotools' 'gcc')
+makedepends=('sdl2-compat' 'autotools' 'gcc')
 optdepends=(
-  'sdl2: for sdl audio support'
+  'sdl2-compat: for sdl audio support'
   'perl: for conplay'
 )
 provides=(lib{mpg,out,syn}123.so)
