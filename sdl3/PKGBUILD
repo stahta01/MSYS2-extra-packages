@@ -2,7 +2,7 @@
 # contributer: Zach Bacon <zachbacon@budgiemedia.rocks>
 
 pkgname=sdl3
-pkgver=3.4.12
+pkgver=3.4.14
 pkgrel=1
 pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 3)"
 arch=('i686' 'x86_64')
@@ -17,8 +17,10 @@ source=("https://github.com/libsdl-org/SDL/releases/download/release-${pkgver}/S
         '004-Fix-selected-CYGWIN-build-issues.patch'
         '005-Msys-Work-around-fixes-for-IIDs.patch'
         '006-Add-support-for-MSYS.patch'
-        '007-Cygwin-Add-__CYGWIN__-guard.patch')
-sha512sums=('c53cb5d82f6a9b7221bfd4f64d5352fd0c91837b7cb88ccf4898657b241189e25b7d405aa0c5c42ee25bad9a19c1da5c2daca6f8fde493ae26cb3e5f2883c0f5'
+        '007-Cygwin-Add-__CYGWIN__-guard.patch'
+        '008-Cygwin-Change-DLL-name.patch'
+        '009-Msys-Add-SDL_PLATFORM_MSYS.patch')
+sha512sums=('4105d57b3581d9d1e98c0bbd38d69cc5015b2b3d358fff0a617f9a89b37f5dd3e32e95b6ffc01cb865b9c599956cffa5cfcb96812fe7ed4afad632872c617e87'
             'SKIP'
             '903b37b15151009e9fd45bace89f048722fda6cd8e317c96ee49697d17df2a3abaa669a01ab0f33460cd299bbac897c15b011b17b9e2f0cc5624d948f451a722'
             '477c26b7a549dfbc144d497359e407e0e8016c5877b177d3335ccd6db08f484d06bab9ce69effa5cc9515fc9190d363e30a32f393cb6ddaf7629e7e9aecc6a5e'
@@ -26,7 +28,9 @@ sha512sums=('c53cb5d82f6a9b7221bfd4f64d5352fd0c91837b7cb88ccf4898657b241189e25b7
             '5b88decf00a90d1e16431ccd22856f27027f0601ef61c9475a92c07a2ec95cd2c0e442371ace838ae17a485fd32188ee2014f377a90465eec08e14a339c6b796'
             '8157d2f02190af3f62989712cc9f0818838cc743a6d5b9d7e99f0ce9d6b93e4126bd22bbeb384bcdd7d261e8f150e4bd712d2389074e5ed91c60327393956313'
             '240a03007f96ff5d0b79dac3f72250403b5dff7443f016a5e693c3eedfadecc7d610a6b38777fa5b7c8ecd23e3d054b9655fa5b4837f12eff462d0d2ae207cf2'
-            '6aeed1b7ddcf6a15349e124e0bee6c9765cec207e14d807182f5999aa39512b14fb46ba6b8b5405e9b678924d465b37b11509cf6e54480194804e7a58bf20ce7')
+            '6aeed1b7ddcf6a15349e124e0bee6c9765cec207e14d807182f5999aa39512b14fb46ba6b8b5405e9b678924d465b37b11509cf6e54480194804e7a58bf20ce7'
+            '5e9a3cd5408873b9d6e688396cf089b53d65d388821df4993208a42f0d09487b1024a2b49d79ec797426e869a5c63476684da770a7a7609edfc4bd2ae5d48da1'
+            '5af70de0fcc2e54a04f27b076398f065d3bfb9f454d92f5684d3f538ecff043509810dd4c36d16e5f8353aeb578c047ae4faa048b9f7a596772d9e8993a0f268')
 validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
 
 prepare() {
@@ -39,6 +43,8 @@ prepare() {
   patch -p1 -i "${srcdir}"/005-Msys-Work-around-fixes-for-IIDs.patch
   patch -p1 -i "${srcdir}"/006-Add-support-for-MSYS.patch
   patch -p1 -i "${srcdir}"/007-Cygwin-Add-__CYGWIN__-guard.patch
+  patch -p1 -i "${srcdir}"/008-Cygwin-Change-DLL-name.patch
+  patch -p1 -i "${srcdir}"/009-Msys-Add-SDL_PLATFORM_MSYS.patch
 }
 
 build() {
@@ -66,7 +72,7 @@ package() {
 
   DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake --install .
 
-  cp --no-clobber ${pkgdir}${MSYSTEM_PREFIX}/bin/msys-SDL3-0.dll ${pkgdir}${MSYSTEM_PREFIX}/bin/msys-SDL3.dll
+  #cp --no-clobber ${pkgdir}${MSYSTEM_PREFIX}/bin/msys-SDL3-0.dll ${pkgdir}${MSYSTEM_PREFIX}/bin/msys-SDL3.dll
 
   install -Dm644 ../SDL3-${pkgver}/LICENSE.txt "$pkgdir${MSYSTEM_PREFIX}/share/licenses/$pkgname/LICENSE"
 }
