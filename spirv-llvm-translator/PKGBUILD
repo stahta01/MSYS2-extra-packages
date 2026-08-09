@@ -1,0 +1,73 @@
+# contributer: Biswapriyo Nath <nathbappai@gmail.com>
+
+_srcname=SPIRV-LLVM-Translator
+_realname=spirv-llvm-translator
+pkgbase=${_realname}
+pkgname=("${_realname}")
+pkgver=21.1.8
+pkgrel=1
+pkgdesc='Tool and a library for bi-directional translation between SPIR-V and LLVM IR'
+arch=('i686' 'x86_64')
+url='https://github.com/KhronosGroup/SPIRV-LLVM-Translator'
+msys2_repository_url='https://github.com/KhronosGroup/SPIRV-LLVM-Translator'
+msys2_references=(
+  'archlinux: spirv-llvm-translator'
+)
+license=(spdx:NCSA)
+depends=("gcc-libs"
+         "llvm-libs"
+         "spirv-tools")
+makedepends=("gcc"
+             "cmake"
+             "llvm"
+             "ninja"
+             "spirv-headers")
+source=("https://github.com/KhronosGroup/SPIRV-LLVM-Translator/archive/v${pkgver}/${_srcname}-${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  declare -a _extra_config
+  if check_option "debug" "n"; then
+    _extra_config+=("-DCMAKE_BUILD_TYPE=Release")
+  else
+    _extra_config+=("-DCMAKE_BUILD_TYPE=Debug")
+  fi
+
+  export CC=clang
+  echo "CC := $CC"
+
+    ${MSYSTEM_PREFIX}/bin/cmake.exe \
+      -GNinja \
+      -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+      -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR=${MSYSTEM_PREFIX}/include/spirv \
+      "${_extra_config[@]}" \
+      -DBUILD_SHARED_LIBS=OFF \
+      -DLLVM_SPIRV_INCLUDE_TESTS=OFF \
+      -B build-${MSYSTEM_CARCH}-static \
+      -S ${_srcname}-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --build build-${MSYSTEM_CARCH}-static
+
+    ${MSYSTEM_PREFIX}/bin/cmake.exe \
+      -GNinja \
+      -DCMAKE_INSTALL_PREFIX=${MSYSTEM_PREFIX} \
+      -DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR=${MSYSTEM_PREFIX}/include/spirv \
+      "${_extra_config[@]}" \
+      -DBUILD_SHARED_LIBS=ON \
+      -DLLVM_SPIRV_INCLUDE_TESTS=OFF \
+      -B build-${MSYSTEM_CARCH}-shared \
+      -S ${_srcname}-${pkgver}
+
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --build build-${MSYSTEM_CARCH}-shared
+  ${MSYSTEM_PREFIX}/bin/cmake.exe --build build-${MSYSTEM_CARCH}-shared --target llvm-spirv
+}
+
+package() {
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install build-${MSYSTEM_CARCH}-static
+
+  DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake.exe --install build-${MSYSTEM_CARCH}-shared
+  install -Dm755 build-${MSYSTEM_CARCH}-shared/tools/llvm-spirv/llvm-spirv.exe "${pkgdir}"${MSYSTEM_PREFIX}/bin
+
+  install -Dm644 "${srcdir}"/${_srcname}-${pkgver}/LICENSE.TXT \
+    "${pkgdir}"${MSYSTEM_PREFIX}/share/licenses/${_realname}/LICENSE.TXT
+}
