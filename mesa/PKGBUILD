@@ -17,8 +17,8 @@ depends=(#"clang-libs"
          #"libsystre"
          'libva'
          #"libwinpthread"
-         #"spirv-llvm-translator"
-         #"spirv-tools"
+         "spirv-llvm-translator"
+         "spirv-tools"
          #"vulkan-loader"
          'zlib'
          'zstd'
@@ -31,7 +31,7 @@ makedepends=('gcc'
              'python-mako'
              'python-packaging'
              'python-yaml'
-             #'clang'
+             'clang'
              'llvm'
              'glslang'
              "libclc"
