@@ -1,4 +1,4 @@
-From 336cec9fad9b5b10bd00399d9e0d392f35ae43cf Mon Sep 17 00:00:00 2001
+From 4680e8841e057e6081a33a06ce5b09d2f8b97d2c Mon Sep 17 00:00:00 2001
 From: Tim Stahlhut <stahta01@gmail.com>
 Date: Tue, 28 Jul 2026 10:09:42 -0400
 Subject: Msys: Work around fixes for IIDs
@@ -14,7 +14,7 @@ Subject: Msys: Work around fixes for IIDs
  3 files changed, 12 insertions(+)
 
 diff --git a/src/camera/mediafoundation/SDL_camera_mediafoundation.c b/src/camera/mediafoundation/SDL_camera_mediafoundation.c
-index f04b77b59..f4504fc85 100644
+index f04b77b59..2bbe41f20 100644
 --- a/src/camera/mediafoundation/SDL_camera_mediafoundation.c
 +++ b/src/camera/mediafoundation/SDL_camera_mediafoundation.c
 @@ -38,6 +38,10 @@
@@ -22,14 +22,14 @@ index f04b77b59..f4504fc85 100644
  #include "../SDL_camera_c.h"
  
 +#ifdef __MSYS__
-+const IID GUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
++    const IID GUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
 +#endif
 +
  static const IID SDL_IID_IMFMediaSource = { 0x279a808d, 0xaec7, 0x40c8, { 0x9c, 0x6b, 0xa6, 0xb4, 0x92, 0xc7, 0x8a, 0x66 } };
  static const IID SDL_IID_IMF2DBuffer = { 0x7dc9d5f9, 0x9ed9, 0x44ec, { 0x9b, 0xbf, 0x06, 0x00, 0xbb, 0x58, 0x9f, 0xbb } };
  static const IID SDL_IID_IMF2DBuffer2 = { 0x33ae5ea6, 0x4316, 0x436f, { 0x8d, 0xdd, 0xd7, 0x3d, 0x22, 0xf8, 0x29, 0xec } };
 diff --git a/src/dialog/windows/SDL_windowsdialog.c b/src/dialog/windows/SDL_windowsdialog.c
-index 660665c91..2472fff15 100644
+index 660665c91..fd6a198f7 100644
 --- a/src/dialog/windows/SDL_windowsdialog.c
 +++ b/src/dialog/windows/SDL_windowsdialog.c
 @@ -371,6 +371,10 @@ struct IFileDialog2
@@ -37,14 +37,14 @@ index 660665c91..2472fff15 100644
  #endif // #ifndef __IFileDialog2_INTERFACE_DEFINED__
  
 +#if defined(__MSYS__) && defined(__x86_64__)
-+    const IID IID_IShellItem = {0x43826d1e, 0xe718, 0x42ee, {0xbc, 0x55, 0xa1, 0xe2, 0x61, 0xc3, 0x7b, 0xfe}};
++    const IID IID_IShellItem = { 0x43826d1e, 0xe718, 0x42ee, { 0xbc, 0x55, 0xa1, 0xe2, 0x61, 0xc3, 0x7b, 0xfe } };
 +#endif
 +
  /* *INDENT-OFF* */ // clang-format off
  static const CLSID SDL_CLSID_FileOpenDialog = { 0xdc1c5a9c, 0xe88a, 0x4dde, { 0xa5, 0xa1, 0x60, 0xf8, 0x2a, 0x20, 0xae, 0xf7 } };
  static const CLSID SDL_CLSID_FileSaveDialog = { 0xc0b4e2f3, 0xba21, 0x4773, { 0x8d, 0xba, 0x33, 0x5e, 0xc9, 0x46, 0xeb, 0x8b } };
 diff --git a/src/video/windows/SDL_windowswindow.c b/src/video/windows/SDL_windowswindow.c
-index b6a425151..fe74a978b 100644
+index b6a425151..ec077f3f2 100644
 --- a/src/video/windows/SDL_windowswindow.c
 +++ b/src/video/windows/SDL_windowswindow.c
 @@ -43,6 +43,10 @@

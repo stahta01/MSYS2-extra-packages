@@ -1,22 +1,26 @@
-From 2eb5fe1f65999d7fc2210cde8769758ff3306b12 Mon Sep 17 00:00:00 2001
+From 6111f07b8107689397eea70f28ebfa22674401f0 Mon Sep 17 00:00:00 2001
 From: Tim Stahlhut <stahta01@gmail.com>
 Date: Mon, 3 Aug 2026 08:52:20 -0400
 Subject: Add support for MSYS
 
+[sdl-ci-filter cygwin]
+[sdl-ci-filter msys2-*]
+[sdl-ci-filter msvc-*]
+[sdl-ci-filter ngage]
+[sdl-ci-filter steamrt4]
 ---
- CMakeLists.txt                      | 12 ++++++------
+ CMakeLists.txt                      | 16 ++++++++--------
  include/SDL3/SDL_egl.h              |  2 +-
  include/SDL3/SDL_opengl.h           |  6 +++---
  include/SDL3/SDL_opengl_glext.h     |  2 +-
- src/dynapi/SDL_dynapi.c             |  4 ++--
+ include/SDL3/SDL_platform_defines.h |  9 +++++++++
  src/hidapi/windows/hid.c            |  2 +-
  src/io/SDL_iostream.c               | 14 +++++++-------
  src/io/SDL_iostream_c.h             |  2 +-
  src/video/khronos/EGL/eglplatform.h |  2 +-
- 9 files changed, 23 insertions(+), 23 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 1f58b7af3..5183442b6 100644
+index a3b95f8da..5e68fd2ce 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -129,7 +129,7 @@ list(APPEND CMAKE_REQUIRED_LINK_OPTIONS ${SDL_CHECK_REQUIRED_LINK_OPTIONS})
@@ -71,6 +75,22 @@ index 1f58b7af3..5183442b6 100644
    sdl_glob_sources(
      "${SDL3_SOURCE_DIR}/src/process/windows/*.c"
      "${SDL3_SOURCE_DIR}/src/process/windows/*.h"
+@@ -3988,13 +3988,13 @@ if(SDL_SHARED)
+         RESOURCE "${SDL_FRAMEWORK_RESOURCES}"
+       )
+     endif()
+-  elseif(UNIX AND NOT ANDROID)
++  elseif(UNIX AND NOT (ANDROID OR MSYS))
+     set_target_properties(SDL3-shared PROPERTIES
+       VERSION "${SDL_SO_VERSION}"
+       SOVERSION "${SDL_SO_VERSION_MAJOR}"
+     )
+   else()
+-    if(WINDOWS OR CYGWIN)
++    if(WINDOWS)
+       set_target_properties(SDL3-shared PROPERTIES
+         PREFIX ""
+       )
 diff --git a/include/SDL3/SDL_egl.h b/include/SDL3/SDL_egl.h
 index 1371c4d01..f4d955d52 100644
 --- a/include/SDL3/SDL_egl.h
@@ -88,15 +108,6 @@ diff --git a/include/SDL3/SDL_opengl.h b/include/SDL3/SDL_opengl.h
 index 733f2b51a..c7fdf48b0 100644
 --- a/include/SDL3/SDL_opengl.h
 +++ b/include/SDL3/SDL_opengl.h
-@@ -71,7 +71,7 @@
-  * Begin system-specific stuff.
-  */
- 
--#if defined(_WIN32) && !defined(__CYGWIN__)
-+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MSYS__)
- #  if (defined(_MSC_VER) || defined(__MINGW32__)) && defined(BUILD_GL32) /* tag specify we're building mesa as a DLL */
- #    define GLAPI __declspec(dllexport)
- #  elif (defined(_MSC_VER) || defined(__MINGW32__)) && defined(_DLL) /* tag specifying we're building for DLL runtime support */
 @@ -84,7 +84,7 @@
  #  else
  #    define GLAPIENTRY __stdcall
@@ -128,41 +139,26 @@ index ff6ad12ce..68aa1113b 100644
  #ifndef WIN32_LEAN_AND_MEAN
  #define WIN32_LEAN_AND_MEAN 1
  #endif
-diff --git a/src/dynapi/SDL_dynapi.c b/src/dynapi/SDL_dynapi.c
-index 495a8e52c..9e454fd5e 100644
---- a/src/dynapi/SDL_dynapi.c
-+++ b/src/dynapi/SDL_dynapi.c
-@@ -47,7 +47,7 @@
- // These headers have system specific definitions, so aren't included above
- #include <SDL3/SDL_vulkan.h>
- 
--#if defined(WIN32) || defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN)
-+#if defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__)
- #ifndef WIN32_LEAN_AND_MEAN
- #define WIN32_LEAN_AND_MEAN 1
- #endif
-@@ -487,7 +487,7 @@ static void dynapi_warn(const char *msg)
-     const char *caption = "SDL Dynamic API Failure!";
-     (void)caption;
- // SDL_ShowSimpleMessageBox() is a too heavy for here.
--#if (defined(WIN32) || defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN)) && !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
-+#if (defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__)) && !defined(SDL_PLATFORM_XBOXONE) && !defined(SDL_PLATFORM_XBOXSERIES)
-     MessageBoxA(NULL, msg, caption, MB_OK | MB_ICONERROR);
- #elif defined(HAVE_STDIO_H)
-     fprintf(stderr, "\n\n%s\n%s\n\n", caption, msg);
-diff --git a/src/hidapi/windows/hid.c b/src/hidapi/windows/hid.c
-index 3eadf027b..b3d3d647d 100644
---- a/src/hidapi/windows/hid.c
-+++ b/src/hidapi/windows/hid.c
-@@ -45,7 +45,7 @@ typedef LONG NTSTATUS;
- #define _WIN32_WINNT_WIN8 0x0602
+diff --git a/include/SDL3/SDL_platform_defines.h b/include/SDL3/SDL_platform_defines.h
+index 3a7c8c6cf..e8f06eda8 100644
+--- a/include/SDL3/SDL_platform_defines.h
++++ b/include/SDL3/SDL_platform_defines.h
+@@ -317,6 +317,15 @@
+ #define SDL_PLATFORM_CYGWIN 1
  #endif
  
--#if defined(__CYGWIN__) && !defined(HIDAPI_USING_SDL_RUNTIME)
-+#if defined(__CYGWIN__) && !defined(HIDAPI_USING_SDL_RUNTIME) && !defined(__MSYS__)
- #include <ntdef.h>
- #include <wctype.h>
- #define _wcsdup wcsdup
++#if defined(__MSYS__)
++
++/**
++ * A preprocessor macro that is only defined if compiling for Msys.
++ *
++ */
++#define SDL_PLATFORM_MSYS 1
++#endif
++
+ #if (defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN)) && !defined(__NGAGE__)
+ 
+ /**
 diff --git a/src/io/SDL_iostream.c b/src/io/SDL_iostream.c
 index d32c04b81..b68290b79 100644
 --- a/src/io/SDL_iostream.c

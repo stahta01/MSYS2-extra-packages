@@ -3,7 +3,7 @@
 
 pkgname=sdl3
 pkgver=3.4.14
-pkgrel=1
+pkgrel=2
 pkgdesc="A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 3)"
 arch=('i686' 'x86_64')
 url="https://www.libsdl.org"
@@ -11,40 +11,22 @@ license=('Zlib')
 depends=()
 makedepends=('cmake' 'ninja' 'autotools' 'gcc')
 source=("https://github.com/libsdl-org/SDL/releases/download/release-${pkgver}/SDL3-${pkgver}.tar.gz"{,.sig}
-        '001-Add-Cygwin-guards-to-SDL3-SDL_stdinc.h.patch'
-        '002-Add-or-edit-macros-to-reduce-warnings.patch'
-        '003-Edit-SDL_d3d12.h-to-enable-Cygwin-and-MSYS-features.patch'
-        '004-Fix-selected-CYGWIN-build-issues.patch'
-        '005-Msys-Work-around-fixes-for-IIDs.patch'
-        '006-Add-support-for-MSYS.patch'
-        '007-Cygwin-Add-__CYGWIN__-guard.patch'
-        '008-Cygwin-Change-DLL-name.patch'
-        '009-Msys-Add-SDL_PLATFORM_MSYS.patch')
+        '001-Msys-Work-around-fixes-for-IIDs.patch'
+        '002-Fix-selected-CYGWIN-build-issues.patch'
+        '003-Add-support-for-MSYS.patch')
 sha512sums=('4105d57b3581d9d1e98c0bbd38d69cc5015b2b3d358fff0a617f9a89b37f5dd3e32e95b6ffc01cb865b9c599956cffa5cfcb96812fe7ed4afad632872c617e87'
             'SKIP'
-            '903b37b15151009e9fd45bace89f048722fda6cd8e317c96ee49697d17df2a3abaa669a01ab0f33460cd299bbac897c15b011b17b9e2f0cc5624d948f451a722'
-            '477c26b7a549dfbc144d497359e407e0e8016c5877b177d3335ccd6db08f484d06bab9ce69effa5cc9515fc9190d363e30a32f393cb6ddaf7629e7e9aecc6a5e'
-            'c6ddc50feda87aa1e93e185a15de1335fb910e7c23703229bd0e9d3264a14253e99fac83ef667f1a2f88204d06b446067c56573644dea3e573a18ab87b07b9d4'
-            '5b88decf00a90d1e16431ccd22856f27027f0601ef61c9475a92c07a2ec95cd2c0e442371ace838ae17a485fd32188ee2014f377a90465eec08e14a339c6b796'
-            '8157d2f02190af3f62989712cc9f0818838cc743a6d5b9d7e99f0ce9d6b93e4126bd22bbeb384bcdd7d261e8f150e4bd712d2389074e5ed91c60327393956313'
-            '240a03007f96ff5d0b79dac3f72250403b5dff7443f016a5e693c3eedfadecc7d610a6b38777fa5b7c8ecd23e3d054b9655fa5b4837f12eff462d0d2ae207cf2'
-            '6aeed1b7ddcf6a15349e124e0bee6c9765cec207e14d807182f5999aa39512b14fb46ba6b8b5405e9b678924d465b37b11509cf6e54480194804e7a58bf20ce7'
-            '5e9a3cd5408873b9d6e688396cf089b53d65d388821df4993208a42f0d09487b1024a2b49d79ec797426e869a5c63476684da770a7a7609edfc4bd2ae5d48da1'
-            '5af70de0fcc2e54a04f27b076398f065d3bfb9f454d92f5684d3f538ecff043509810dd4c36d16e5f8353aeb578c047ae4faa048b9f7a596772d9e8993a0f268')
+            '8ed02a5d4809bef55d36cb41152e2621e5b4e34bd11318115bec11f76a3cabbe4621e2a981e1a23d4051e5d9c71cb412405443a909dafc644987c536a18d6b29'
+            '524ac46c0ab3e7195481566998edf1193fae27460a6e77075d53c896d7fbd78e90da3ee2ac746440356724b9aaa9cbf7136acd440ac666b705fbd7438d7470e6'
+            '5ece6b6e1bd21eabc6418045adf998459288ec16a2222a87824dc191cd947aa40a5553f710af90085457d66c599b0bd21044e9458ac60c29e7d22ff8d9d46947')
 validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6') # Sam Lantinga
 
 prepare() {
   cd SDL3-${pkgver}
 
-  patch -p1 -i "${srcdir}"/001-Add-Cygwin-guards-to-SDL3-SDL_stdinc.h.patch
-  patch -p1 -i "${srcdir}"/002-Add-or-edit-macros-to-reduce-warnings.patch
-  patch -p1 -i "${srcdir}"/003-Edit-SDL_d3d12.h-to-enable-Cygwin-and-MSYS-features.patch
-  patch -p1 -i "${srcdir}"/004-Fix-selected-CYGWIN-build-issues.patch
-  patch -p1 -i "${srcdir}"/005-Msys-Work-around-fixes-for-IIDs.patch
-  patch -p1 -i "${srcdir}"/006-Add-support-for-MSYS.patch
-  patch -p1 -i "${srcdir}"/007-Cygwin-Add-__CYGWIN__-guard.patch
-  patch -p1 -i "${srcdir}"/008-Cygwin-Change-DLL-name.patch
-  patch -p1 -i "${srcdir}"/009-Msys-Add-SDL_PLATFORM_MSYS.patch
+  patch -p1 -i "${srcdir}"/001-Msys-Work-around-fixes-for-IIDs.patch
+  patch -p1 -i "${srcdir}"/002-Fix-selected-CYGWIN-build-issues.patch
+  patch -p1 -i "${srcdir}"/003-Add-support-for-MSYS.patch
 }
 
 build() {
@@ -71,8 +53,6 @@ package() {
   cd "${srcdir}/build-${MSYSTEM_CARCH}"
 
   DESTDIR="${pkgdir}" ${MSYSTEM_PREFIX}/bin/cmake --install .
-
-  #cp --no-clobber ${pkgdir}${MSYSTEM_PREFIX}/bin/msys-SDL3-0.dll ${pkgdir}${MSYSTEM_PREFIX}/bin/msys-SDL3.dll
 
   install -Dm644 ../SDL3-${pkgver}/LICENSE.txt "$pkgdir${MSYSTEM_PREFIX}/share/licenses/$pkgname/LICENSE"
 }

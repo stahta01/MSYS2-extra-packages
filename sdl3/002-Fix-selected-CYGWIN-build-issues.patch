@@ -1,4 +1,4 @@
-From f1ce533e3dd1b3d21fe6d02d5797ad26fcc145d2 Mon Sep 17 00:00:00 2001
+From a9cb2aec1b0221041d76702e8f2aca8c03db816d Mon Sep 17 00:00:00 2001
 From: Tim Stahlhut <stahta01@gmail.com>
 Date: Mon, 3 Aug 2026 08:49:56 -0400
 Subject: Fix selected CYGWIN build issues.
@@ -11,19 +11,20 @@ Co-authored-by: Ozkan Sezer <sezeroz@gmail.com>
 ---
  CMakeLists.txt                      | 33 +++++++++--------------------
  cmake/macros.cmake                  |  2 +-
- include/SDL3/SDL_platform_defines.h |  2 +-
+ include/SDL3/SDL_stdinc.h           | 10 ++++-----
  include/SDL3/SDL_thread.h           |  4 ++--
  src/SDL.c                           |  2 +-
  src/hidapi/SDL_hidapi.c             | 22 +++++++++----------
  src/hidapi/windows/hid.c            |  2 +-
  src/io/SDL_iostream.c               | 18 +++++++---------
  src/io/SDL_iostream_c.h             |  2 +-
+ src/stdlib/SDL_getenv.c             |  8 +++----
+ src/video/directx/SDL_d3d12.h       |  6 ++++++
  test/CMakeLists.txt                 |  2 +-
  test/childprocess.c                 |  4 ++--
- 11 files changed, 39 insertions(+), 54 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index b8d17216e..1f58b7af3 100644
+index 1785395fb..a3b95f8da 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -359,16 +359,16 @@ dep_option(SDL_WAYLAND_LIBDECOR_SHARED     "Dynamically load libdecor support" O
@@ -130,25 +131,61 @@ index 038dd9896..9c024f586 100644
    endif()
  
 -  if(UNIX AND NOT (ANDROID OR APPLE OR EMSCRIPTEN OR HAIKU OR RISCOS))
-+  if(UNIX AND NOT (ANDROID OR APPLE OR EMSCRIPTEN OR HAIKU OR RISCOS OR DJGPP OR CYGWIN))
++  if(UNIX AND NOT (ANDROID OR APPLE OR EMSCRIPTEN OR HAIKU OR RISCOS OR CYGWIN))
      if(NOT (HAVE_X11 OR HAVE_WAYLAND))
        if(NOT SDL_UNIX_CONSOLE_BUILD)
          message(FATAL_ERROR
-diff --git a/include/SDL3/SDL_platform_defines.h b/include/SDL3/SDL_platform_defines.h
-index 79631491d..3a7c8c6cf 100644
---- a/include/SDL3/SDL_platform_defines.h
-+++ b/include/SDL3/SDL_platform_defines.h
-@@ -417,7 +417,7 @@
- #define SDL_PLATFORM_WIN32 1
- 
+diff --git a/include/SDL3/SDL_stdinc.h b/include/SDL3/SDL_stdinc.h
+index b6403bea7..d4bca5b29 100644
+--- a/include/SDL3/SDL_stdinc.h
++++ b/include/SDL3/SDL_stdinc.h
+@@ -727,7 +727,7 @@ typedef Sint64 SDL_Time;
+  * <inttypes.h> should define these but this is not true all platforms.
+  * (for example win32) */
+ #ifndef SDL_PRIs64
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ #define SDL_PRIs64 "I64d"
+ #elif defined(PRId64)
+ #define SDL_PRIs64 PRId64
+@@ -738,7 +738,7 @@ typedef Sint64 SDL_Time;
  #endif
--#endif /* defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN) */
-+#endif /* (defined(_WIN32) || defined(SDL_PLATFORM_CYGWIN)) && !defined(__NGAGE__) */
- 
- 
- /* This is to support generic "any GDK" separate from a platform-specific GDK */
+ #endif
+ #ifndef SDL_PRIu64
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ #define SDL_PRIu64 "I64u"
+ #elif defined(PRIu64)
+ #define SDL_PRIu64 PRIu64
+@@ -749,7 +749,7 @@ typedef Sint64 SDL_Time;
+ #endif
+ #endif
+ #ifndef SDL_PRIx64
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ #define SDL_PRIx64 "I64x"
+ #elif defined(PRIx64)
+ #define SDL_PRIx64 PRIx64
+@@ -760,7 +760,7 @@ typedef Sint64 SDL_Time;
+ #endif
+ #endif
+ #ifndef SDL_PRIX64
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ #define SDL_PRIX64 "I64X"
+ #elif defined(PRIX64)
+ #define SDL_PRIX64 PRIX64
+@@ -799,7 +799,7 @@ typedef Sint64 SDL_Time;
+ #endif
+ #endif
+ /* Specifically for the `long long` -- SDL-specific. */
+-#ifdef SDL_PLATFORM_WINDOWS
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ #ifndef SDL_NOLONGLONG
+ SDL_COMPILE_TIME_ASSERT(longlong_size64, sizeof(long long) == 8); /* using I64 for windows - make sure `long long` is 64 bits. */
+ #endif
 diff --git a/include/SDL3/SDL_thread.h b/include/SDL3/SDL_thread.h
-index 1842c035f..9f6f8feae 100644
+index 1842c035f..83d11f90a 100644
 --- a/include/SDL3/SDL_thread.h
 +++ b/include/SDL3/SDL_thread.h
 @@ -48,7 +48,7 @@
@@ -156,7 +193,7 @@ index 1842c035f..9f6f8feae 100644
  #include <SDL3/SDL_atomic.h>
  
 -#if defined(SDL_PLATFORM_WINDOWS)
-+#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
  #include <process.h> /* _beginthreadex() and _endthreadex() */
  #endif
  
@@ -165,12 +202,12 @@ index 1842c035f..9f6f8feae 100644
  /* The real implementation, hidden from the wiki, so it can show this as real functions that don't have macro magic. */
  #ifndef SDL_WIKI_DOCUMENTATION_SECTION
 -#  if defined(SDL_PLATFORM_WINDOWS)
-+#  if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
++#  if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
  #    ifndef SDL_BeginThreadFunction
  #      define SDL_BeginThreadFunction _beginthreadex
  #    endif
 diff --git a/src/SDL.c b/src/SDL.c
-index 3e61b8ad4..df3f7050c 100644
+index 3e61b8ad4..41d680776 100644
 --- a/src/SDL.c
 +++ b/src/SDL.c
 @@ -717,7 +717,7 @@ void SDL_Quit(void)
@@ -178,7 +215,7 @@ index 3e61b8ad4..df3f7050c 100644
  #endif
  
 -#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_ANDROID) && !defined(SDL_PLATFORM_EMSCRIPTEN) && !defined(SDL_PLATFORM_PRIVATE)
-+#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_ANDROID) && !defined(SDL_PLATFORM_EMSCRIPTEN) && !defined(SDL_PLATFORM_PRIVATE) && !defined(__CYGWIN__)
++#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_ANDROID) && !defined(SDL_PLATFORM_EMSCRIPTEN) && !defined(SDL_PLATFORM_PRIVATE) && !defined(SDL_PLATFORM_CYGWIN)
      SDL_Gtk_Quit();
  #endif
  
@@ -383,6 +420,65 @@ index fadb98bcb..be955e89a 100644
  SDL_IOStream *SDL_IOFromHandle(HANDLE handle, const char *mode, bool autoclose);
  #else
  #if defined(HAVE_STDIO_H)
+diff --git a/src/stdlib/SDL_getenv.c b/src/stdlib/SDL_getenv.c
+index 1517b5974..e058c0c90 100644
+--- a/src/stdlib/SDL_getenv.c
++++ b/src/stdlib/SDL_getenv.c
+@@ -22,7 +22,7 @@
+ 
+ #include "SDL_getenv_c.h"
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ #include "../core/windows/SDL_windows.h"
+ #endif
+ 
+@@ -30,7 +30,7 @@
+ #include "../core/android/SDL_android.h"
+ #endif
+ 
+-#if defined(SDL_PLATFORM_WINDOWS)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+ #define HAVE_WIN32_ENVIRONMENT
+ #elif defined(HAVE_GETENV) && \
+       (defined(HAVE_SETENV) || defined(HAVE_PUTENV)) && \
+@@ -103,7 +103,7 @@ SDL_Environment *SDL_CreateEnvironment(bool populated)
+     env->lock = SDL_CreateMutex();
+ 
+     if (populated) {
+-#ifdef SDL_PLATFORM_WINDOWS
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
+         LPWCH strings = GetEnvironmentStringsW();
+         if (strings) {
+             for (LPWCH string = strings; *string; string += SDL_wcslen(string) + 1) {
+@@ -146,7 +146,7 @@ SDL_Environment *SDL_CreateEnvironment(bool populated)
+                 SDL_InsertIntoHashTable(env->strings, variable, value, true);
+             }
+         }
+-#endif // SDL_PLATFORM_WINDOWS
++#endif // SDL_PLATFORM_WINDOWS && !SDL_PLATFORM_CYGWIN
+     }
+ 
+     return env;
+diff --git a/src/video/directx/SDL_d3d12.h b/src/video/directx/SDL_d3d12.h
+index 2dfe67220..e69680d69 100644
+--- a/src/video/directx/SDL_d3d12.h
++++ b/src/video/directx/SDL_d3d12.h
+@@ -37,8 +37,14 @@
+ #define WINAPI_PARTITION_GAMES 0
+ #endif // WINAPI_PARTITION_GAMES
+ 
++#if defined(SDL_PLATFORM_WIN32) && defined(SDL_PLATFORM_CYGWIN)
++  #define _WIN32 1
++#endif
+ #define COBJMACROS
+ #include "d3d12.h"
++#if defined(SDL_PLATFORM_WIN32) && defined(SDL_PLATFORM_CYGWIN)
++  #undef _WIN32
++#endif
+ #include <dxgi1_6.h>
+ #include <dxgidebug.h>
+ 
 diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
 index 2b58fa4ec..ac74b111f 100644
 --- a/test/CMakeLists.txt
@@ -397,7 +493,7 @@ index 2b58fa4ec..ac74b111f 100644
          endif()
          if(NOT notrackmem)
 diff --git a/test/childprocess.c b/test/childprocess.c
-index 69a7cea2d..785356d0c 100644
+index 69a7cea2d..ccce2e862 100644
 --- a/test/childprocess.c
 +++ b/test/childprocess.c
 @@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
@@ -405,7 +501,7 @@ index 69a7cea2d..785356d0c 100644
      if (print_arguments) {
          int print_i;
 -#ifdef SDL_PLATFORM_WINDOWS
-+#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
          /* reopen stdout as binary to prevent newline conversion */
          _setmode(_fileno(stdout), _O_BINARY);
  #endif
@@ -414,7 +510,7 @@ index 69a7cea2d..785356d0c 100644
                      }
  
 -#ifdef SDL_PLATFORM_WINDOWS
-+#if defined(SDL_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
++#if defined(SDL_PLATFORM_WINDOWS) && !defined(SDL_PLATFORM_CYGWIN)
                      if (strerror_s(error, sizeof(error), errno) != 0) {
                          SDL_strlcpy(error, "Unknown error", sizeof(error));
                      }
