@@ -102,7 +102,7 @@ build() {
   -Dshared-llvm=enabled
   -Dgallium-drivers=softpipe,llvmpipe,zink,d3d12
   -Dgallium-va=enabled
-  -Dmicrosoft-clc=enabled
+  -Dmesa-clc=enabled
   -Dspirv-to-dxil=true
   -Dstatic-libclc=all
   )
